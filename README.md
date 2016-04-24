@@ -1,4 +1,4 @@
-# KarnaughMapMatlab
+# Karnaugh Map Generator and Solver
 Simple scripts to generate a Karnaugh map from a truth table and generate the Boolean expression for it.
 
 ### Generator
