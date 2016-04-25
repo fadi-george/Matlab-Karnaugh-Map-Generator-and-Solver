@@ -66,7 +66,7 @@ n = n - 1;
 
 %% Label Matrix Inputs
 str = '';
-if( length(optLabels) && nargin >= 4 )
+if( nargin >= 4 && length(optLabels) )
     for ii = 1:rowBits
         str = strcat(str,optLabels{ii});
     end
