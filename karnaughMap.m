@@ -34,7 +34,7 @@ if( nargin >= 4 )
     end
     
     if( length(optLabels) )
-        if( n+m ~= length(optLabels) && ~iscell(optLabels) )
+        if( ((sizeMat(1) + sizeMat(2)) ~= length(optLabels)) || ~iscell(optLabels) )
             error('Optional labels must be in a cell format and must equal the total number of variables specified by the size matrix.');
         end
     end
