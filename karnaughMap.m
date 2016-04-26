@@ -5,14 +5,17 @@ function kMatrix = karnaughMap( sizeMat , truthTable , columnChoice , optLabels 
 % columnChoice is the column index for the output
 % optLabels is to specify what to label the rows or columns
 % -- optLabels must be a cell of characters i.e. {'W','X','Z'}
-% optLogic helps to generate default, RS flipflop, or any other configuration
-% -- only 'RS' supported for now
-% -- rightmost columns in truth table should be the next state values,
-% -- inputs will be the leftmost columns, present state columns will be
-% -- columns after the input columns
+% optLogic helps to generate default, RS flipflop, or any other configuration i.e. { 'RS' , 1 }
+% -- which will create seperate matrices for R and S using column 1 as the present state
+% -- rightmost columns in truth table should be the next state values with any outputs,
+% -- leftmost columns should be the present state values and any inputs
+
 %% Check Option
+%%
 [n , m] = size(sizeMat);
 [r , c] = size(truthTable);
+numMats = 1;
+fflogic = '';
 
 if( n ~= 1 && m ~= 2 )
     error('Size must be a 1 by 2 array with entries being the number of varaibles for the row or column.');
@@ -20,11 +23,13 @@ end
 if( columnChoice(1) > c )
     error('Column choice is bigger than the number of rows in the truth table.');    
 end
-
-numMats = 1;
 if( nargin >= 4 )
     if( nargin == 5 ) % Generate 2 K-maps for FlipFlops other than D-Q
-        if( strcmp('RS',optLogic) || strcmp('JK',optLogic) )   
+        if( length(optLogic) ~= 2 || ~iscell(optLogic) )
+           error('Option logic must be a 1x2 cell with first entry being the logic to perform and the second entry being the column of the present state bit');
+        end
+        fflogic = optLogic{1};
+        if( strcmp('RS',fflogic) || strcmp('JK',fflogic) )   
             numMats = 2;
         else
             error('No other FlipFlop logic is supported.');
@@ -44,6 +49,7 @@ end
 
 
 %% Initialize K-matricies
+%%
 rowBits = sizeMat(1);
 rows = 2^rowBits;
 
@@ -65,6 +71,7 @@ n = n - 1;
 
 
 %% Label Matrix Inputs
+%%
 str = '';
 if( nargin >= 4 && length(optLabels) )
     for ii = 1:rowBits
@@ -86,6 +93,7 @@ end
 
 
 %% Label Columns and Rows
+%%
 for ii = 1:numMats
     kMatrix(1,1,ii) = {str};
     st = 0;
@@ -121,6 +129,7 @@ for ii = 1:numMats
 end
 
 %% Plug Values into KMap
+%%
 for jj = 1:numMats
 
     for ii = 1:tableRows
@@ -136,7 +145,7 @@ for jj = 1:numMats
         rowPos = strmatch(r , {kMatrix{2:end,1,jj}}) + 1;
         colPos = strmatch(c , {kMatrix{1,2:end,jj}}) + 1;
         
-        if( strcmp('RS',optLogic) )
+        if( strcmp('RS',fflogic) )
         %% R-S flipflop
             currentState = num2str(truthTable(ii,columnChoice-numStates));
 
