@@ -3,7 +3,7 @@ Simple scripts to generate a Karnaugh map from a truth table and generate the Bo
 
 ### Generator
 The karnaughMap script will output a Karnaugh Map based on some specified parameters:
-- **sizeMat** (A 1x2 matrix, whose first entry specifies the number of rows, and second entry specifies number of columns)
+- **sizeMat** (A 1x2 matrix, number of variables to put on the row / column )
 - **truthTable** (A truthtable of 1's and 0's that can have "missing rows" which will be replaced by don't cares)
 - **columnChoice** (The column in the truth table to place on the Karnaugh Map)
 
