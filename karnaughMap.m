@@ -60,8 +60,6 @@ if( r > (rows*cols) )
     warning('Number of rows in the truth table is bigger than required as specified by the size matrix.');
 end
 
-numStates = c - (rowBits + colBits);
-
 kMatrix = cell(rows+1,cols+1,numMats);       % create cell array to hold bits
 kMatrix(:) = {'X'};                          % initialize to all dont cares
 [m , n , ~] = size(kMatrix);
@@ -141,33 +139,53 @@ for jj = 1:numMats
 
         output = num2str(truthTable(ii,columnChoice));
 
-        %% Get position
+        % Get position
         rowPos = strmatch(r , {kMatrix{2:end,1,jj}}) + 1;
         colPos = strmatch(c , {kMatrix{1,2:end,jj}}) + 1;
         
-        if( strcmp('RS',fflogic) )
-        %% R-S flipflop
-            currentState = num2str(truthTable(ii,columnChoice-numStates));
-
-            if( jj == 1 )                                       % Reset
+        if( fflogic )
+            currentState = num2str(truthTable(ii,optLogic{2}));
+        end
+        
+        if( jj == 1 )                                       
+            if( strcmp('RS',fflogic) )                      % Reset
                 if( output == '1' )
                     output = '0';
                 elseif( currentState == '1' && output == '0' )
                     output = '1';           
                 else
                     output = 'X';           
-                end                 
-            else                                                % Set
+                end
+            elseif( strcmp('JK',fflogic) )                  % J
+                if( currentState == '0' && output == '0' )
+                    output = '0';
+                elseif( currentState == '0' && output == '1' )
+                    output = '1';           
+                else
+                    output = 'X';           
+                end                
+            end
+        else                                                
+            if( strcmp('RS',fflogic) )                      % Set
                 if( output == '0' )
                     output = '0';
                 elseif( currentState == '0' && output == '1' )
                     output = '1';           
                 else
                     output = 'X';           
-                end              
+                end
+            elseif( strcmp('JK',fflogic) )                  % K
+                if( currentState == '1' && output == '0' )
+                    output = '1';
+                elseif( currentState == '1' && output == '1' )
+                    output = '0';           
+                else
+                    output = 'X';           
+                end                 
             end
-        
         end
+        
+        
         
         kMatrix(rowPos,colPos,jj) = {output};
         

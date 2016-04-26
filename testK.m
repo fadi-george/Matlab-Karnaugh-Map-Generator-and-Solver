@@ -32,7 +32,7 @@ genLogic( K2 )
 
 % Create Reset-Set matrices for the 5th column , will use the 2nd column as
 % the present state
-K1 = karnaughMap( [2 , 2] , A , 5 , {} , {'RS',1} );
+K1 = karnaughMap( [2 , 2] , A , 5 , {} , {'RS',2} );
 R1 = K1(:,:,1)
 S1 = K1(:,:,2)
 genLogic(R1 , 1)
