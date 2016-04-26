@@ -32,9 +32,14 @@ genLogic( K2 )
 
 % Create Reset-Set matrices for the 5th column , will use the 2nd column as
 % the present state
-K1 = karnaughMap( [2 , 2] , A , 5 , {} , {'RS',2} );
-R1 = K1(:,:,1)
-S1 = K1(:,:,2)
+K3 = karnaughMap( [2 , 2] , A , 5 , {} , {'SR',2} );
+R1 = K3(:,:,1)
+S1 = K3(:,:,2)
 genLogic(R1 , 1)
 genLogic(S1 , 0)
 
+% Output JK matrices
+K4 = karnaughMap( [2 , 2] , A , 6 , {} , {'JK',3} )
+
+% Output T flip flop logic
+K5 = karnaughMap( [2 , 2] , A , 7 , {} , {'T',4} )

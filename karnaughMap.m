@@ -5,7 +5,7 @@ function kMatrix = karnaughMap( sizeMat , truthTable , columnChoice , optLabels 
 % columnChoice is the column index for the output
 % optLabels is to specify what to label the rows or columns
 % -- optLabels must be a cell of characters i.e. {'W','X','Z'}
-% optLogic helps to generate default, RS flipflop, or any other configuration i.e. { 'RS' , 1 }
+% optLogic helps to generate default, SR flipflop, or any other configuration i.e. { 'SR' , 1 }
 % -- which will create seperate matrices for R and S using column 1 as the present state
 % -- rightmost columns in truth table should be the next state values with any outputs,
 % -- leftmost columns should be the present state values and any inputs
@@ -25,14 +25,19 @@ if( columnChoice(1) > c )
 end
 if( nargin >= 4 )
     if( nargin == 5 ) % Generate 2 K-maps for FlipFlops other than D-Q
-        if( length(optLogic) ~= 2 || ~iscell(optLogic) )
-           error('Option logic must be a 1x2 cell with first entry being the logic to perform and the second entry being the column of the present state bit');
+        if(~iscell(optLogic) )
+           error('Option logic must be a cell aray.');
         end
         fflogic = optLogic{1};
-        if( strcmp('RS',fflogic) || strcmp('JK',fflogic) )   
-            numMats = 2;
+        if( strcmp('SR',fflogic) || strcmp('JK',fflogic) || strcmp('T',fflogic) ) 
+            if( length(optLogic) ~= 2 )
+                error('If SR or JK or T are specified, an additional entry is needed to specify the column of the present state bit.');
+            end
+            if( ~strcmp('T',fflogic) )
+                numMats = 2;
+            end    
         else
-            error('No other FlipFlop logic is supported.');
+            error('Not a valid choice for optional logic.');
         end
     else
         optLogic = '';
@@ -147,8 +152,8 @@ for jj = 1:numMats
             currentState = num2str(truthTable(ii,optLogic{2}));
         end
         
-        if( jj == 1 )                                       
-            if( strcmp('RS',fflogic) )                      % Reset
+        if( jj == 1 )  
+            if( strcmp('SR',fflogic) )                      % Reset
                 if( output == '1' )
                     output = '0';
                 elseif( currentState == '1' && output == '0' )
@@ -163,10 +168,14 @@ for jj = 1:numMats
                     output = '1';           
                 else
                     output = 'X';           
-                end                
+                end
+            elseif( strcmp('T',fflogic) )                   % T
+                if( currentState == '1' )
+                    output = num2str( output ~= '1' );          
+                end
             end
         else                                                
-            if( strcmp('RS',fflogic) )                      % Set
+            if( strcmp('SR',fflogic) )                      % Set
                 if( output == '0' )
                     output = '0';
                 elseif( currentState == '0' && output == '1' )
@@ -185,11 +194,7 @@ for jj = 1:numMats
             end
         end
         
-        
-        
-        kMatrix(rowPos,colPos,jj) = {output};
-        
-        
+        kMatrix(rowPos,colPos,jj) = {output};              
     end
 end
 
