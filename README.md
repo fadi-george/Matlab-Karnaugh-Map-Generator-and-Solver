@@ -22,7 +22,7 @@ Parameters:
 A driver program is provided to play around with and test.
 An example of generating a truth table for the or operaiton:
 
-```matlab
+```
 A = [0 0 0; 0 1 1; 1 0 1; 1 1 1]
 K1 = karnaughMap( [1 , 1] , A , 3 )
 genLogic( K1 , 1 )
