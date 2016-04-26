@@ -208,6 +208,10 @@ function logicStr =  groupOnesOrZeros( kMat , rowInds , colInds , isMinTerm )
         if( rLogLength ~= rows )  
             rowStr = matchAndGenStr( strL( rowLogInds ) , leftLabels{1} , isMinTerm );
         end
+        if( cLogLength == cols && rLogLength == rows )
+            logicStr = '1';
+            return;
+        end
         
         %% Append MinTerm or MaxTerm
         if( isMinTerm )
