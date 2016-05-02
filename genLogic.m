@@ -8,11 +8,13 @@ subMat = kMat(2:end,2:end);
 [m , n] = size(subMat);
 
 %% Check Args
+%%
 if( nargin < 2 )
     midOrMax = 1;
 end
     
 %% Row and Column Indicides of 1s or 0s
+%%
 if( midOrMax == 1 )
     [r,c] = ind2sub([m n] , strmatch('1',subMat(:)));
 else
@@ -20,6 +22,7 @@ else
 end
 
 %% Check Special Cases
+%%
 len = length(r);
 if( len == m*n )
     res = '1';
@@ -31,12 +34,14 @@ if( len == 0 )
 end
 
 %% Group 1s or 0s
+%%
 res = groupOnesOrZeros( kMat , r , c , midOrMax );
 end
 
 function logicStr =  groupOnesOrZeros( kMat , rowInds , colInds , isMinTerm )
 
     %% Convert Cell Matrix to Numeric Matrix
+    %%
     strVars = kMat{ 1 , 1 };
     strT = kMat(1 , 2:end );
     strL = kMat( 2:end , 1 )';
@@ -44,11 +49,20 @@ function logicStr =  groupOnesOrZeros( kMat , rowInds , colInds , isMinTerm )
     kMat = fixDontCares( kMat );
     k = 1;
     
+    %% Read Labels
+    %%
     labels = strsplit(strVars ,'\');
     leftLabels = labels(1);                          % Left Label Variables
     topLabels  = labels(2);                          % Top  Label Variables
     
+    %% Check Sizes
+    %%  
     [rows , cols] = size( kMat );
+    if( rows > 4 )
+        
+    end
+    if( cols > 4 )
+    end
     
     logicStr = '';
     if( isMinTerm == 0 )
