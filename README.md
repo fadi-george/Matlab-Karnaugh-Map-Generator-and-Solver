@@ -1,4 +1,5 @@
-# Karnaugh Map Generator and Solver
+# Karnaugh Map Generator and Solver (WIP)
+Project is a work in progress.
 Simple scripts to generate a Karnaugh map from a truth table and generate the Boolean expression for it.
 
 ### Generator
