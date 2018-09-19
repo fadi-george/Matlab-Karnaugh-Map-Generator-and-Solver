@@ -90,7 +90,7 @@ else
     end
     str = strcat(str,'\');
     for ii = 1:colBits
-        str = strcat(str,64+rowBits+ii);
+        str = strcat(str,64+1+ii);
     end    
 end
 
