@@ -8,31 +8,31 @@ function kMat = karnaugh( truthTable, outputSize, columnIndex, varargin )
 %%
 % Invaid truth table
 [tr tc] = size(truthTable);
-if (all(truthTable(:) < 2) == 0)
-    error('KMap:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
+isEmpty = sum(tr + tc) == 0;
+numVars = sum(outputSize);
+
+if (all(truthTable(:) <= 1 & truthTable(:) >= 0) == 0)
+    error('KMAP:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
 end
-if (tr > 2^tc)
-    error('KMap:InvalidRowCount', 'Truth table length must not be greater than 2^(number of columns).')
-end
-if (~isequal(size(unique(truthTable, 'rows')), size(truthTable)))
-    error('KMap:NonUniqueRows', 'Truth table must not have repeated rows.')
+if (tr > 2^(tc - 1))
+    error('KMAP:InvalidRowCount', 'Truth table length must not be greater than 2^(number of columns).')
 end
 
 % Invalid output size
 [or oc] = size(outputSize);
-if (or ~= 1 && oc ~= 2)
-    error('KMap:InvalidOutputSize', 'Output size must be a 1 by 2 matrix.')
+if (or ~= 1 || oc ~= 2)
+    error('KMAP:InvalidOutputSize', 'Output size must be a 1 by 2 matrix.')
 end
-if (sum(outputSize) > 26)
-    error('KMap:InvalidOutputSize', 'Custom labels must be provided for sizes greather than 26.')
+if (numVars > 26)
+    error('KMAP:RestrictOutputSize', 'Custom labels must be provided for sizes greather than 26.')
 end
-if (sum(outputSize) ~= tc - 1)
-    error('KMap:InvalidOutputSize', 'Number of variables must be one less than the number of columns of the truth table.')
+if (~isEmpty && numVars ~= tc - 1)
+    error('KMAP:InvalidNumVars', 'Number of variables must be one less than the number of columns of the truth table.')
 end
 
 % Invalid column
-if (columnIndex < 1 || columnIndex > tc)
-    error('KMap:InvalidColumnIndex', 'Column index must fall within the number of columns of the truth table.')
+if (columnIndex < 1 || columnIndex > numVars + 1)
+    error('KMAP:InvalidColumnIndex', 'Column index must fall within the number of columns of the truth table.')
 end
 
 % options = varargin{:}
@@ -47,38 +47,42 @@ colVars = outputSize(2);
 rows = 2^rowVars;
 cols = 2^colVars;
 
-kMat = cell(rows + 1, cols + 1, 1)
+kMat = cell(rows + 1, cols + 1, 1);
 kMat(2:end, 2:end) = {dontCare};
 
 % TODO: custom label
 %% Labelings
 %%
-str = '';
-for ii = 1:outputSize(1)
-    str = strcat(str,64+ii);
-end
-str = strcat(str, '/');
-for ii = 1:outputSize(2)
-    str = strcat(str,64+oc+ii);
-end
-kMat(1,1,1) = {str}
+str = strcat(char(65:64+outputSize(1)), '\', char(65+outputSize(1):64+sum(outputSize)));
+kMat(1,1,1) = {str};
 
 % Gray codes
-for rr = 2:rows+1
-    kMat(rr,1) = {dec2bin(graycode(rr - 2),rowVars)};
-end
-for cc = 2:cols+1
-    kMat(1,cc) = {dec2bin(graycode(cc - 2),colVars)};
+kMat(2:rows+1,1) = cellstr(dec2bin(graycode(0:rows-1),rowVars));
+kMat(1,2:cols+1) = cellstr(dec2bin(graycode(0:cols-1),colVars));
+
+if (isEmpty)
+    return;
 end
 
+%% Checking duplicates
+%%
+outputEntries = truthTable(:,columnIndex);
+trimmedTable = truthTable;
+trimmedTable(:,columnIndex) = [];
+[trimmedTable, R, L] = unique(trimmedTable, 'rows', 'stable');
+outputEntries = outputEntries(R);
+
+dupRowInds = L(hist(L,unique(L))>1);
+if (~isempty(dupRowInds))
+    warning('Duplicate rows excluding the output column will be removed.');
+    trimmedTable(dupRowInds,:) = [];
+    outputEntries(dupRowInds) = [];
+end
+outputEntries=cellstr(num2str(outputEntries));
 
 %% Map Rows to Map
 %%
 % Mapping output column to a cell array
-outputEntries = cellstr(num2str(truthTable(:,columnIndex)));
-trimmedTable = truthTable;
-trimmedTable(:,columnIndex) = [];
-
 % rows excluding the columnIndex will be mapped to binary values
 rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
 colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
@@ -88,4 +92,3 @@ colInds = graycode(colInds) + 2;
 linearInds = sub2ind([rows + 1, cols + 1], rowInds, colInds);
 kMat(linearInds) = outputEntries;
 end
-
