@@ -1,51 +1,66 @@
-function logicStr = genLogic(KMapIn, matchValue)
+function logicStr = genLogic(KMapIn, matchValue, rowInds, colInds)
 %%
-
+KMapSelect = KMapIn(rowInds, colInds);
 isMinTerm = strcmp(matchValue,'1');
-fullMatch = all(all(strcmp(KMapIn(2:end,2:end), matchValue)));
-[rows cols] = size(KMapIn);
 
-labels = strsplit('AB\CD','\');
+fullMatch = all(all(strcmp(KMapSelect, matchValue)));
+%fullMatchZero = all(all(strcmp(KMapSelect, '0')));
+%fullMatchOne = all(all(strcmp(KMapSelect, '1')));
+[rows cols] = size(KMapSelect);
+
+labels = strsplit(KMapIn{1,1}, '\');
 rowLabelLen = length(labels{1});
 colLabelLen = length(labels{2});
+
+%% For regexp string simplification
+op = '+';
+groupOp = '*';
+if (~isMinTerm)
+    op = '*';
+    groupOp = '+';
+end
+regStr = strcat('^\',op,'*|','\',op,'*$');
 
 %% All values matched the search term
 %%
 rowStr = '';
 colStr = '';
-
+            
 if (fullMatch)
     % 1s or 0s in every row
-    if (rows - 1 == 2^rowLabelLen)
-        if (isMinTerm)
-            rowStr = '(1)';
-        end
+    if (rows == 2^rowLabelLen && cols == 2^colLabelLen)
+        rowStr = strcat('(', matchValue, ')');
+
         
     % Must check which portions of the gray code stays the same
     else
-        binMat = cell2mat( cellfun(@(str) str - '0', KMapIn(2:end,1),'un',0) );
+        binMat = cell2mat( cellfun(@(str) str - '0', KMapIn(rowInds, 1),'un',0) );
         
         % In case of a single row, difference in the graycodes will be 0 
         [bRows, ~] = size(binMat);
+        
+        labelInds = logical(~diff(binMat));
+        barInds = logical(~diff(binMat));
         if (bRows == 1)
-            binMat = [binMat; binMat];
+            labelInds = true(rowLabelLen,1);
+            barInds = logical(binMat);
         end
         
         % Extract label letters that match with graycode positions that
-        % don't chat
-        matchBin = logical(~diff(binMat));
-        rowStr = labels{1}(matchBin);
+        % don't change
+        % In the case of one row/col, we keep all the letters
+        rowStr = labels{1}(labelInds);
         
-        % Add negation label
+        % In case of one row/col, we only keep "bar" symbols for positions
+        % where they are 0 or 1 depending or not if it is a minterm or
+        % maxterm expression
+        bars = repmat('~', 1, rowLabelLen);
         if (isMinTerm)
-            bars = repmat('''',rows - 1);
-            bars = pad(bars(matchBin),length(rowStr));
-            
-            rowStr = string(vertcat(rowStr, bars)');
-            rowStr = strcat('(', rowStr, ')');
-        else
-            
+            barInds = ~barInds;
+            bars = pad(bars(barInds),length(rowStr));
         end
+        rowStr = strjoin(strip(cellstr((vertcat(bars, rowStr)'))), groupOp);
+        rowStr = strcat('(', rowStr, ')');
         
     end
     
@@ -56,35 +71,25 @@ if (fullMatch)
 %         end
 %     end
     
-    
-    
 else
     %% Divide areas by 2 but also wrapping around
     %%
-    if (rows > 2)
-        rowDiv = (rows - 1)/2;
+    if (rows > 1)
+        rowDiv = rows/2;
 
         % Rows may wrap, so we cycle the inner matrix downwards to mimic this
         for ii = 1:rowDiv
-            KInner = circshift(KMapIn(2:end,1:end),ii - 1);
-            rowUpperStr = genLogic([KMapIn(1, 1:end) ; KInner(1:1+rowDiv-1,:)], matchValue)
-            rowLowerStr = genLogic([KMapIn(1, 1:end) ; KInner(1+rowDiv:end,:)], matchValue)
+            rowShiftInds = circshift(rowInds, ii - 1);
+            rowUpperStr = genLogic(KMapIn, matchValue, rowShiftInds(1:rowDiv), colInds);
+            rowLowerStr = genLogic(KMapIn, matchValue, rowShiftInds(rowDiv+1:end), colInds);
             
-            if (isMinTerm)
-                rowStr = strcat(rowUpperStr, '+', rowLowerStr);
-            else
-                rowStr = strcat(rowUpperStr, '*', rowLowerStr);
-            end
-            
-            rowStr = char(rowStr);
-            if (rowStr(end) == '+' || rowStr(end) == '*')
-                rowStr = rowStr(1:end-1);
-            end
+            rowStr = strjoin({rowStr, rowUpperStr, rowLowerStr}, op);
+            rowStr = regexprep(rowStr, regStr, '');
         end
     end
     
-    if (cols > 2)
-        colDiv = (cols - 1)/2;
+    if (cols > 1)
+        colDiv = cols/2;
         
         % Columns may wrap, so we cycle the inner matrix to mimic this
         for ii = 1:colDiv
@@ -97,19 +102,15 @@ else
 
 end
 
-
 %% Combine logic strings from row and columns
 %
-if (isMinTerm)
-    logicStr = strcat(rowStr, '+', colStr);
-else
-    logicStr = strcat(rowStr, '*', colStr);
-end
+rowStr = char(rowStr);
+colStr = char(colStr);
+
+logicStr = strjoin({rowStr, colStr}, op);
+logicStr = regexprep(logicStr, regStr, '');
 
 logicStr = char(logicStr);
-if (logicStr(end) == '+' || logicStr(end) == '*')
-    logicStr = logicStr(1:end-1);
-end
 
 end
 
