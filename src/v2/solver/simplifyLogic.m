@@ -4,6 +4,10 @@ function logicStrOut = simplifyLogic(logicStrIn)
 formatStr = strrep(logicStrIn,')(',')*(');
 logicStrOut = str2sym(formatStr);
 
+if (isempty(logicStrOut))
+    logicStrOut = "";
+end
+
 %% Additional simplification
 if (regexp(string(logicStrOut),'\s*\+\s*1'))
     logicStrOut = '1';
