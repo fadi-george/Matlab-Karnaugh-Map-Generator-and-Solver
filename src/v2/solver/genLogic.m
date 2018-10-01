@@ -47,70 +47,140 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
     barInds = logical(~diff(binMat));
     if (bRows == 1)
         labelInds = true(rowLabelLen,1);
-        barInds = logical(binMat);
+        barInds = ~logical(binMat);
     end
 
     % Extract label letters that match with graycode positions that
     % don't change
     % In the case of one row/col, we keep all the letters
-    rowStr = labels{1}(labelInds);
+    rowStr = labels{1};
+    rowStr(~labelInds) = ' ';
 
     % In case of one row/col, we only keep "bar" symbols for positions
     % where they are 0 or 1 depending or not if it is a minterm or
     % maxterm expression
     bars = repmat('~', 1, rowLabelLen);
-    if (isMinTerm)
-        barInds = ~barInds;
-        bars = pad(bars(barInds),length(rowStr));
-    end
-    rowStr = strjoin(strip(cellstr((vertcat(bars, rowStr)'))), groupOp);
+    %if (~isMinTerm)
+    %    barInds = ~barInds;
+    %end
+    bars(~barInds) = ' ';
+    
+    rowStr = strip(cellstr((vertcat(bars, rowStr)')));
+    rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
+    rowStr = strjoin(rowStr, groupOp);
     rowStr = strcat('(', rowStr, ')');
     
 else
     %% Divide areas by 2 but also wrapping around
     %%
+    rowDiv = 0;
+    colDiv = 0;
+    rowOffset = 0;
+    colOffset = 0;
+    
+    % Recusrive sub-dvisions of the original array
     if (rows > 1)
         rowDiv = rows/2;
-        
-        visitedRowInds = [];
-
-        % Rows may wrap, so we cycle the inner matrix downwards to mimic this
-        for ii = 1:rowDiv
-            rowShiftInds = circshift(rowInds, ii - 1);
-
-            rowUpInds = rowShiftInds(1:rowDiv);
-            isTopVisited = all(ismember(rowUpInds, visitedRowInds));
-            rowUpperStr = '';
-            
-            if (~isTopVisited)
-                rowUpperStr = genLogic(KMapIn, matchValue, rowUpInds, colInds);
-                visitedRowInds = cat(1, visitedRowInds, rowUpInds);
-            end
-            
-            rowLowInds = rowShiftInds(rowDiv+1:end);
-            isBotVisited = all(ismember(rowLowInds, visitedRowInds));
-            rowLowerStr = '';
-            
-            if (~isBotVisited)
-                rowLowerStr = genLogic(KMapIn, matchValue, rowLowInds, colInds);
-                visitedRowInds = cat(1, visitedRowInds, rowLowInds);
-            end
-            
-            rowStr = strjoin({rowStr, rowUpperStr, rowLowerStr}, op);
-            rowStr = regexprep(rowStr, regStr, '');
-        end
     end
-    
     if (cols > 1)
         colDiv = cols/2;
-        
-        % Columns may wrap, so we cycle the inner matrix to mimic this
-        for ii = 1:colDiv
-            %KInner = circshift(KMapIn(2:end,1:end), ii - 1, 2);
-            %colLeftwardStr = genLogic([KMapIn(1, 1:end) ; KInner(1:1+rowDiv-1,:)], matchValue);
-            %colRightwardStr = genLogic([KMapIn(1, 1:end) ; KInner(1+rowDiv:end,:)], matchValue);
-            %colStr = strcat(rowUpperStr, '+', rowLowerStr);
+    end
+    
+    % Optimize for wraps
+%     minRowInd = min(rowInds);
+%     maxRowInd = max(rowInds);
+%     minColInd = min(colInds);
+%     maxColInd = max(colInds);
+%    
+%     if (rows > 1)
+%         if (minRowInd == 2 && maxRowInd == rows + 1)
+%             if (KMapIn{minRowInd,minColInd} == matchValue && KMapIn{maxRowInd,minColInd} == matchValue)
+%                 rowUpCount = 1;
+%                 rowDownCount = 1;
+% 
+%                 k = 1;
+%                 while (KMapIn{minRowInd + k,minColInd} == matchValue)
+%                     k = k + 1;
+%                     rowDownCount = rowDownCount + 1;
+%                     if (rowDownCount == rowDiv)
+%                         break;
+%                     end
+%                 end
+%                 
+%                 k = 1;
+%                 while (KMapIn{maxRowInd - k,minColInd} == matchValue)
+%                     k = k + 1;
+%                     rowUpCount = rowUpCount + 1;
+%                     if (rowUpCount == rowDiv)
+%                         break;
+%                     end
+%                 end
+%                 
+%                 rowOffset = min(rowUpCount, rowDownCount);
+%                 if (rowUpCount < rowDownCount)
+%                     rowOffset = -rowOffset;
+%                 end
+%             end 
+%         end
+%     end
+%     if (cols > 1)
+%         if (minColInd == 2 && maxColInd == cols + 1)
+%             if (KMapIn{minRowInd,minColInd} == matchValue && KMapIn{minRowInd,maxColInd} == matchValue)
+%                 colRightCount = 1;
+%                 colLeftCount = 1;
+% 
+%                 k = 1;
+%                 while (KMapIn{minRowInd, minColInd + k} == matchValue)
+%                     k = k + 1;
+%                     colRightCount = colRightCount + 1;
+%                     if (colRightCount == colDiv)
+%                         break;
+%                     end
+%                 end
+%                 
+%                 k = 1;
+%                 while (KMapIn{maxRowInd, maxColInd - k} == matchValue)
+%                     k = k + 1;
+%                     colLeftCount = colLeftCount + 1;
+%                     if (colLeftCount == colDiv)
+%                         break;
+%                     end
+%                 end
+%                 
+%                 colOffset = min(colRightCount, colLeftCount);
+%                 if (colRightCount < colLeftCount)
+%                     colOffset = -colOffset;
+%                 end
+%             end 
+%         end
+%     end
+
+    visitedRowInds = [];
+    % Rows may wrap, so we cycle the inner matrix downwards to mimic this
+    for ii = 1:rowDiv
+        rowShiftInds = circshift(rowInds, ii - 1 + rowOffset);
+        %colShiftInds
+
+        rowUpInds = rowShiftInds(1:rowDiv);
+        isTopVisited = all(ismember(rowUpInds, visitedRowInds));
+        rowUpperStr = '';
+
+        if (~isTopVisited)
+            rowUpperStr = genLogic(KMapIn, matchValue, rowUpInds, colInds);
+            visitedRowInds = cat(1, visitedRowInds, rowUpInds);
         end
+
+        rowLowInds = rowShiftInds(rowDiv+1:end);
+        isBotVisited = all(ismember(rowLowInds, visitedRowInds));
+        rowLowerStr = '';
+
+        if (~isBotVisited)
+            rowLowerStr = genLogic(KMapIn, matchValue, rowLowInds, colInds);
+            visitedRowInds = cat(1, visitedRowInds, rowLowInds);
+        end
+
+        rowStr = strjoin({rowStr, rowUpperStr, rowLowerStr}, op);
+        rowStr = regexprep(rowStr, regStr, '');
     end
 
 end
