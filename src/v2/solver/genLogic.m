@@ -65,7 +65,7 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
     %end
     bars(~barInds) = ' ';
     
-    rowStr = strip(cellstr((vertcat(bars, rowStr)')));
+    rowStr = cellstr((vertcat(bars, rowStr)'));
     rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
     rowStr = strjoin(rowStr, groupOp);
     rowStr = strcat('(', rowStr, ')');
@@ -73,10 +73,9 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
 else
     %% Divide areas by 2 but also wrapping around
     %%
+    %visitedRowInds = [];
     rowDiv = 0;
     colDiv = 0;
-    rowOffset = 0;
-    colOffset = 0;
     
     % Recusrive sub-dvisions of the original array
     if (rows > 1)
@@ -85,103 +84,68 @@ else
     if (cols > 1)
         colDiv = cols/2;
     end
+    rowCellStrs = {rowStr};
     
-    % Optimize for wraps
-%     minRowInd = min(rowInds);
-%     maxRowInd = max(rowInds);
-%     minColInd = min(colInds);
-%     maxColInd = max(colInds);
-%    
-%     if (rows > 1)
-%         if (minRowInd == 2 && maxRowInd == rows + 1)
-%             if (KMapIn{minRowInd,minColInd} == matchValue && KMapIn{maxRowInd,minColInd} == matchValue)
-%                 rowUpCount = 1;
-%                 rowDownCount = 1;
-% 
-%                 k = 1;
-%                 while (KMapIn{minRowInd + k,minColInd} == matchValue)
-%                     k = k + 1;
-%                     rowDownCount = rowDownCount + 1;
-%                     if (rowDownCount == rowDiv)
-%                         break;
-%                     end
-%                 end
-%                 
-%                 k = 1;
-%                 while (KMapIn{maxRowInd - k,minColInd} == matchValue)
-%                     k = k + 1;
-%                     rowUpCount = rowUpCount + 1;
-%                     if (rowUpCount == rowDiv)
-%                         break;
-%                     end
-%                 end
-%                 
-%                 rowOffset = min(rowUpCount, rowDownCount);
-%                 if (rowUpCount < rowDownCount)
-%                     rowOffset = -rowOffset;
-%                 end
-%             end 
-%         end
-%     end
-%     if (cols > 1)
-%         if (minColInd == 2 && maxColInd == cols + 1)
-%             if (KMapIn{minRowInd,minColInd} == matchValue && KMapIn{minRowInd,maxColInd} == matchValue)
-%                 colRightCount = 1;
-%                 colLeftCount = 1;
-% 
-%                 k = 1;
-%                 while (KMapIn{minRowInd, minColInd + k} == matchValue)
-%                     k = k + 1;
-%                     colRightCount = colRightCount + 1;
-%                     if (colRightCount == colDiv)
-%                         break;
-%                     end
-%                 end
-%                 
-%                 k = 1;
-%                 while (KMapIn{maxRowInd, maxColInd - k} == matchValue)
-%                     k = k + 1;
-%                     colLeftCount = colLeftCount + 1;
-%                     if (colLeftCount == colDiv)
-%                         break;
-%                     end
-%                 end
-%                 
-%                 colOffset = min(colRightCount, colLeftCount);
-%                 if (colRightCount < colLeftCount)
-%                     colOffset = -colOffset;
-%                 end
-%             end 
-%         end
-%     end
-
-    visitedRowInds = [];
+    
     % Rows may wrap, so we cycle the inner matrix downwards to mimic this
+    % tempStr = '';
+    minLen = Inf;
     for ii = 1:rowDiv
-        rowShiftInds = circshift(rowInds, ii - 1 + rowOffset);
+        rowShiftInds = circshift(rowInds, ii - 1);
         %colShiftInds
 
         rowUpInds = rowShiftInds(1:rowDiv);
-        isTopVisited = all(ismember(rowUpInds, visitedRowInds));
-        rowUpperStr = '';
-
-        if (~isTopVisited)
+        %isTopVisited = all(ismember(rowUpInds, visitedRowInds));
+        %rowUpperStr = '';
+        %if (~isTopVisited)
             rowUpperStr = genLogic(KMapIn, matchValue, rowUpInds, colInds);
-            visitedRowInds = cat(1, visitedRowInds, rowUpInds);
-        end
+        %    if (~isempty(rowUpperStr))
+        %        visitedRowInds = cat(1, visitedRowInds, rowUpInds');
+        %    end
+        %end
 
         rowLowInds = rowShiftInds(rowDiv+1:end);
-        isBotVisited = all(ismember(rowLowInds, visitedRowInds));
-        rowLowerStr = '';
-
-        if (~isBotVisited)
+        %isBotVisited = all(ismember(rowLowInds, visitedRowInds));
+        %rowLowerStr = '';
+        %if (~isBotVisited)
             rowLowerStr = genLogic(KMapIn, matchValue, rowLowInds, colInds);
-            visitedRowInds = cat(1, visitedRowInds, rowLowInds);
-        end
+        %    if (~isempty(rowLowerStr))
+        %        visitedRowInds = cat(1, visitedRowInds, rowLowInds');
+        %    end
+        %end
 
-        rowStr = strjoin({rowStr, rowUpperStr, rowLowerStr}, op);
-        rowStr = regexprep(rowStr, regStr, '');
+        if (~isempty(rowUpperStr))
+            if (length(rowUpperStr) < minLen)
+                rowCellStrs = {};
+                rowCellStrs(end+1) = {rowUpperStr};
+                %tempStr = rowUpperStr;
+                minLen = length(rowUpperStr);
+            elseif (length(rowUpperStr) == minLen)
+                rowCellStrs(end+1) = {rowUpperStr};
+                %tempStr = strjoin(unique({tempStr, rowUpperStr}), op)
+                %tempStr = regexprep(tempStr, regStr, '');   
+            end
+        end
+        
+        if (~isempty(rowLowerStr))
+            if (length(rowLowerStr) < minLen)
+                rowCellStrs = {};
+                rowCellStrs(end+1) = {rowLowerStr};
+                %tempStr = rowLowerStr;
+                minLen = length(rowLowerStr);
+            elseif (length(rowLowerStr) == minLen)
+                rowCellStrs(end+1) = {rowLowerStr};
+                %tempStr = strjoin(unique({tempStr, rowLowerStr}), op)
+                %tempStr = regexprep(tempStr, regStr, '');                   
+            end
+        end
+        
     end
+    
+    rowCellStrs = unique(rowCellStrs);
+    tempStr = strjoin(rowCellStrs, op);
+    tempStr = regexprep(tempStr, regStr, '');
+    rowStr = tempStr;
 
 end
 
