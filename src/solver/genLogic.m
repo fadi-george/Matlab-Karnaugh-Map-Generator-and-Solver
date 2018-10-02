@@ -38,46 +38,57 @@ end
 
 if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
     % Must check which portions of the gray code stays the same
-    binMat = cell2mat( cellfun(@(str) str - '0', KMapIn(rowInds, 1),'un',0) );
-    
-    % In case of a single row, difference in the graycodes will be 0
-    [bRows, ~] = size(binMat);
-    
-    labelInds = logical(~diff(binMat));
-    barInds = logical(~diff(binMat));
+    binRowMat = cell2mat( cellfun(@(str) str - '0', KMapIn(rowInds, 1),'un',0) );
+    binColMat = cell2mat( cellfun(@(str) str - '0', KMapIn(1, colInds)','un',0) );
+
+    % In case of a single row/column, difference in the graycodes will be 0
+    labelRowInds = logical(~diff(binRowMat));
+    barRowInds = logical(all(binRowMat == 0));
+    labelColInds = logical(~diff(binColMat));
+    barColInds = logical(all(binColMat == 0));
+
+    [bRows, ~] = size(binRowMat);
     if (bRows == 1)
-        labelInds = true(rowLabelLen,1);
-        barInds = ~logical(binMat);
+        labelRowInds = true(rowLabelLen,1);
+        barRowInds = logical(binRowMat == 0);
+    end
+    [bRows, ~] = size(binColMat);
+    if (bRows == 1)
+        labelColInds = true(colLabelLen,1);
+        barColInds = logical(binColMat == 0);
     end
     
     % Extract label letters that match with graycode positions that
     % don't change
-    % In the case of one row/col, we keep all the letters
+    % In the case of one row/col, we keep all the letters    
     rowStr = labels{1};
-    rowStr(~labelInds) = ' ';
+    rowStr(~labelRowInds) = ' ';
     
     % In case of one row/col, we only keep "bar" symbols for positions
     % where they are 0 or 1 depending or not if it is a minterm or
     % maxterm expression
     bars = repmat('~', 1, rowLabelLen);
-    %if (~isMinTerm)
-    %    barInds = ~barInds;
-    %end
-    bars(~barInds) = ' ';
+    if (~isMinTerm)
+        barRowInds = ~barRowInds;
+        barColInds = ~barColInds;
+    end
+    bars(~barRowInds) = ' ';
     
     rowStr = cellstr((vertcat(bars, rowStr)'));
     rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
     rowStr = strjoin(rowStr, groupOp);
     
     if (cols < 2^colLabelLen)
+        bars = repmat('~', 1, colLabelLen);
+        bars(~barColInds) = ' ';
+
         colStr = labels{2};
-        colStr(~labelInds) = ' ';
+        colStr(~labelColInds) = ' ';
         
         colStr = cellstr((vertcat(bars, colStr)'));
         colStr = colStr(~(strcmp(colStr, '~') | strcmp(colStr, '')));
         colStr = strjoin(colStr, groupOp);
     end
-    
     
     if (~isempty(rowStr))
         rowStr = strcat('(', rowStr);
@@ -160,6 +171,7 @@ else
         
         if (~isempty(colLeftStr))
             if (length(colLeftStr) < minLen)
+                rowStr = '';
                 colCellStrs = {};
                 colCellStrs(end+1) = {colLeftStr};
                 minLen = length(colLeftStr);
@@ -170,6 +182,7 @@ else
         
         if (~isempty(colRightStr))
             if (length(colRightStr) < minLen)
+                rowStr = '';
                 colCellStrs = {};
                 colCellStrs(end+1) = {colRightStr};
                 minLen = length(colRightStr);
@@ -183,8 +196,6 @@ else
     tempStr = strjoin(colCellStrs, op);
     tempStr = regexprep(tempStr, regStr, '');
     colStr = tempStr;
-    
-    
 end
 
 %% Combine logic strings from row and columns
