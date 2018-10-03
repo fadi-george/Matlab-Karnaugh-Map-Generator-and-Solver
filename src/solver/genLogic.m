@@ -5,18 +5,18 @@ isMinTerm = strcmp(matchValue,'1');
 
 fullMatchZero = all(all(strcmp(KMapSelect, '0')));
 fullMatchOne = all(all(strcmp(KMapSelect, '1')));
-[rows cols] = size(KMapSelect);
+[rows, cols] = size(KMapSelect);
 
 labels = strsplit(KMapIn{1,1}, '\');
 rowLabelLen = length(labels{1});
 colLabelLen = length(labels{2});
 
 %% For regexp string simplification
-op = '+';
-groupOp = '*';
+cellOp = '*';
+groupOp = '+';
 if (~isMinTerm)
-    op = '*';
-    groupOp = '+';
+    cellOp = '+';
+    groupOp = '*';
 end
 regStr = '(^\+*|^\**)|(\+*$|\**$)';
 
@@ -60,24 +60,27 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
     
     % Extract label letters that match with graycode positions that
     % don't change
-    % In the case of one row/col, we keep all the letters    
-    rowStr = labels{1};
-    rowStr(~labelRowInds) = ' ';
+    % In the case of one row/col, we keep all the letters
     
     % In case of one row/col, we only keep "bar" symbols for positions
     % where they are 0 or 1 depending or not if it is a minterm or
     % maxterm expression
-    bars = repmat('~', 1, rowLabelLen);
     if (~isMinTerm)
         barRowInds = ~barRowInds;
         barColInds = ~barColInds;
     end
-    bars(~barRowInds) = ' ';
     
-    rowStr = cellstr((vertcat(bars, rowStr)'));
-    rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
-    rowStr = strjoin(rowStr, groupOp);
-    
+    if (rows < 2^rowLabelLen)
+        bars = repmat('~', 1, rowLabelLen);
+        bars(~barRowInds) = ' ';
+            
+        rowStr = labels{1};
+        rowStr(~labelRowInds) = ' ';
+
+        rowStr = cellstr((vertcat(bars, rowStr)'));
+        rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
+        rowStr = strjoin(rowStr, cellOp);
+    end
     if (cols < 2^colLabelLen)
         bars = repmat('~', 1, colLabelLen);
         bars(~barColInds) = ' ';
@@ -87,8 +90,9 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
         
         colStr = cellstr((vertcat(bars, colStr)'));
         colStr = colStr(~(strcmp(colStr, '~') | strcmp(colStr, '')));
-        colStr = strjoin(colStr, groupOp);
+        colStr = strjoin(colStr, cellOp);
     end
+    
     
     if (~isempty(rowStr))
         rowStr = strcat('(', rowStr);
@@ -99,8 +103,13 @@ if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
     if (~isempty(colStr))
         colStr = strcat(colStr, ')');
         if (isempty(rowStr))
-            rowStr = strcat('(', colStr);
+            colStr = strcat('(', colStr);
         end
+    end
+    
+    if (~isempty(rowStr) && ~isempty(colStr))
+        logicStr = strjoin({rowStr, colStr}, cellOp);
+        return;
     end
 else
     %% Divide areas by 2 but also wrapping around
@@ -153,8 +162,8 @@ else
         end
     end
     
-    rowCellStrs = unique(rowCellStrs);
-    tempStr = strjoin(rowCellStrs, op);
+    rowCellStrs = unique(rowCellStrs, 'stable');
+    tempStr = strjoin(rowCellStrs, groupOp);
     tempStr = regexprep(tempStr, regStr, '');
     rowStr = tempStr;
     
@@ -192,18 +201,15 @@ else
         end
     end
     
-    colCellStrs = unique(colCellStrs);
-    tempStr = strjoin(colCellStrs, op);
+    colCellStrs = unique(colCellStrs, 'stable');
+    tempStr = strjoin(colCellStrs, groupOp);
     tempStr = regexprep(tempStr, regStr, '');
     colStr = tempStr;
 end
 
 %% Combine logic strings from row and columns
 %%
-rowStr = char(rowStr);
-colStr = char(colStr);
-
-logicStr = strjoin(unique({rowStr, colStr}), groupOp);
+logicStr = strjoin(unique({rowStr, colStr}, 'stable'), groupOp);
 logicStr = regexprep(logicStr, regStr, '');
 
 logicStr = char(logicStr);
