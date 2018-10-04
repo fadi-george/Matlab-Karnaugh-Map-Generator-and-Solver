@@ -1,4 +1,4 @@
-function kMat = karnaugh( truthTable, outputSize, columnIndex, varargin )
+function kMat = karnaughMap( truthTable, outputSize, columnIndex, varargin )
 %% Generates a Karnaugh Map matrix from some truthtable and chosen output column
 % truthTable - a binary matrix, "missing" rows will be treated as don't cares
 % ouputSize - array specifying how many variables to 
@@ -15,7 +15,7 @@ if (all(truthTable(:) <= 1 & truthTable(:) >= 0) == 0)
     error('KMAP:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
 end
 if (tr > 2^(tc - 1))
-    error('KMAP:InvalidRowCount', 'Truth table length must not be greater than 2^(number of columns).')
+    error('KMAP:InvalidRowCount', 'Truth table contains too many rows when excluding chosen column.')
 end
 
 % Invalid output size
