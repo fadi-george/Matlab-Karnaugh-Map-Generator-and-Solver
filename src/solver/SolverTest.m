@@ -308,14 +308,23 @@ classdef SolverTest < matlab.unittest.TestCase
         %% CheckerBoard
         function testCheckerboard(testCase)
             K = {
+                'A\B',  '0',    '1';
+                '0',    '0',    '1';
+                '1',    '1',    '0';
+            };
+            verifyEqual(testCase, solver(K), '(~A*B)+(A*~B)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(A+B)*(~A+~B)');
+            
+            K = {
                 'AB\CD',    '00',   '01',   '11',   '10';
                 '00',       '1',    '0',    '1',    '0';
                 '01',       '0',    '1',    '0',    '1';
                 '11',       '1',    '0',    '1',    '0';
                 '10',       '0',    '1',    '0',    '1';
             };
-            %verifyEqual(testCase, solver(K), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+B+C+~D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(~A+B+~C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(~A+~B+C+~D)*(~A+B+~C+~D)*(~A+B+C+D)*(~A+B+~C+~D)*(A+B+C+~D)*(A+B+~C+D)*(~A+B+C+D)*(A+B+C+~D)*(~A+B+~C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)*(A+~B+C+D)*(~A+~B+C+~D)*(A+~B+~C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(A+B+C+~D)*(A+~B+C+D)*(~A+~B+C+~D)*(A+~B+C+D)*(~A+B+C+D)*(A+B+C+~D)*(~A+~B+C+~D)*(~A+B+~C+~D)*(A+B+~C+D)*(A+~B+~C+~D)*(~A+~B+~C+D)*(A+~B+~C+~D)*(~A+B+~C+~D)*(A+B+~C+D)*(~A+~B+~C+D)*(A+B+~C+D)*(A+~B+C+D)*(~A+~B+~C+D)*(~A+B+C+D)*(A+B+~C+D)*(~A+~B+~C+D)*(A+~B+C+D)*(~A+B+C+D)*(A+B+C+~D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+B+~C+~D)*(A+B+C+~D)*(~A+~B+C+~D)*(A+~B+~C+~D)*(~A+B+~C+~D)');
-            %verifyEqual(testCase, solver(K,'maxterm'), '(B)*(D)');
+            
+            verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*B*~C*~D)+(A*B*C*D)+(A*~B*~C*D)+(A*~B*C*~D)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(~A+B+~C+~D)');
         end
     end
 end

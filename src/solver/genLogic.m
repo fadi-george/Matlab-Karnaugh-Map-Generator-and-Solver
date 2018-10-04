@@ -36,7 +36,12 @@ if (rows == 2^rowLabelLen && cols == 2^colLabelLen)
     end
 end
 
-if ((fullMatchZero && ~isMinTerm) || (fullMatchOne && isMinTerm))
+if (fullMatchZero || fullMatchOne)
+    if ((fullMatchZero & isMinTerm) || (fullMatchOne & ~isMinTerm))
+        logicStr = '';
+        return;
+    end
+    
     % Must check which portions of the gray code stays the same
     binRowMat = cell2mat( cellfun(@(str) str - '0', KMapIn(rowInds, 1),'un',0) );
     binColMat = cell2mat( cellfun(@(str) str - '0', KMapIn(1, colInds)','un',0) );
@@ -125,8 +130,7 @@ else
     if (cols > 1)
         colDiv = cols/2;
     end
-    rowCellStrs = {rowStr};
-    colCellStrs = {colStr};
+    rowStr = '';
     
     
     % Rows may wrap, so we cycle the inner matrix downwards to mimic this
@@ -143,27 +147,25 @@ else
         
         if (~isempty(rowUpperStr))
             if (length(rowUpperStr) < minLen)
-                rowCellStrs = {};
-                rowCellStrs(end+1) = {rowUpperStr};
+                rowStr = rowUpperStr;
                 minLen = length(rowUpperStr);
             elseif (length(rowUpperStr) == minLen)
-                rowCellStrs(end+1) = {rowUpperStr};
+                rowStr = strjoin({rowStr, rowUpperStr}, groupOp);
             end
         end
         
         if (~isempty(rowLowerStr))
             if (length(rowLowerStr) < minLen)
-                rowCellStrs = {};
-                rowCellStrs(end+1) = {rowLowerStr};
+                rowStr = rowLowerStr;
                 minLen = length(rowLowerStr);
             elseif (length(rowLowerStr) == minLen)
-                rowCellStrs(end+1) = {rowLowerStr};
+                rowStr = strjoin({rowStr, rowLowerStr}, groupOp);
             end
         end
     end
     
-    rowCellStrs = unique(rowCellStrs, 'stable');
-    tempStr = strjoin(rowCellStrs, groupOp);
+    tempStr = unique(strsplit(rowStr, groupOp), 'stable');
+    tempStr = strjoin(tempStr, groupOp);
     tempStr = regexprep(tempStr, regStr, '');
     rowStr = tempStr;
     
@@ -181,37 +183,35 @@ else
         if (~isempty(colLeftStr))
             if (length(colLeftStr) < minLen)
                 rowStr = '';
-                colCellStrs = {};
-                colCellStrs(end+1) = {colLeftStr};
+                colStr = colLeftStr;
                 minLen = length(colLeftStr);
             elseif (length(colLeftStr) == minLen)
-                colCellStrs(end+1) = {colLeftStr};
+                colStr = strjoin({colStr, colLeftStr}, groupOp);
             end
         end
         
         if (~isempty(colRightStr))
             if (length(colRightStr) < minLen)
                 rowStr = '';
-                colCellStrs = {};
-                colCellStrs(end+1) = {colRightStr};
+                colStr = colRightStr;
                 minLen = length(colRightStr);
             elseif (length(colRightStr) == minLen)
-                colCellStrs(end+1) = {colRightStr};
+                colStr = strjoin({colStr, colRightStr}, groupOp);
             end
         end
     end
-    
-    colCellStrs = unique(colCellStrs, 'stable');
-    tempStr = strjoin(colCellStrs, groupOp);
+       
+    tempStr = unique(strsplit(colStr, groupOp), 'stable');
+    tempStr = strjoin(tempStr, groupOp);
     tempStr = regexprep(tempStr, regStr, '');
     colStr = tempStr;
 end
 
 %% Combine logic strings from row and columns
 %%
-logicStr = strjoin(unique({rowStr, colStr}, 'stable'), groupOp);
-logicStr = regexprep(logicStr, regStr, '');
-
+tempStr = unique(strsplit(strjoin({rowStr, colStr}, groupOp), groupOp), 'stable');
+tempStr = strjoin(tempStr, groupOp);
+logicStr = regexprep(tempStr, regStr, '');
 logicStr = char(logicStr);
 
 end
