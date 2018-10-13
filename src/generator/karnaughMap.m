@@ -85,24 +85,12 @@ outputEntries=cellstr(num2str(outputEntries));
 %%
 % Mapping output column to a cell array
 % rows excluding the columnIndex will be mapped to binary values
-%rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
-%colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
+rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
+colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
 
-% TODO, optimize binary string to graycode location index on karnaugh map
-rowCodes = kMat(1:end,1);
-colCodes = kMat(1,1:end);
-
-tempRowInds = num2str(trimmedTable(:,1:rowVars),'%d');
-rowInds = ones(length(tempRowInds),1);
-for ii = 1:length(rowInds)
-    rowInds(ii,1) = find(cellfun(@(rowStr) strcmp(rowStr, tempRowInds(ii,:)), rowCodes, 'UniformOutput', 1));
-end
-
-tempColInds = num2str(trimmedTable(:,rowVars+1:end),'%d');
-colInds = ones(length(tempRowInds),1);
-for ii = 1:length(colInds)
-    colInds(ii,1) = find(cellfun(@(rowStr) strcmp(rowStr, tempColInds(ii,:)), colCodes, 'UniformOutput', 1));
-end
+% Performing graycode inverse and offsetting for placement
+rowInds = graycodeInv(rowInds) + 2;
+colInds = graycodeInv(colInds) + 2;
 
 linearInds = sub2ind([rows + 1, cols + 1], rowInds, colInds);
 kMat(linearInds) = outputEntries;

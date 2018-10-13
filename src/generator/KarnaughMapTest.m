@@ -79,5 +79,30 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
             };
             testCase.verifyEqual(kMapOut,expected)
         end
+        
+        function testLargeKMaps(testCase)
+            kMapOut = karnaughMap([
+                0 0 0 0 1 1;
+                0 0 0 1 1 1;
+                0 0 0 1 0 1;
+                0 1 0 1 1 1;
+                1 0 0 0 1 1;
+                1 0 0 1 1 1;
+                0 0 1 1 1 1;
+                0 0 1 0 1 1;
+                0 1 1 0 1 1;
+                1 1 1 1 1 1;
+                1 1 1 0 1 1;
+                1 0 1 1 1 1;
+            ], [2, 3], 6, '0');
+            expected = {
+                'AB\CDE',   '000',  '001',  '011',  '010',  '110',  '111',  '101',  '100';
+                '00',       '0',    '1',    '1',    '1',    '0',    '1',    '1',    '0';
+                '01',       '0',    '0',    '1',    '0',    '0',    '0',    '1',    '0';
+                '11',       '0',    '0',    '0',    '0',    '0',    '1',    '1',    '0';
+                '10',       '0',    '1',    '1',    '0',    '0',    '1',    '0',    '0';
+            };
+            testCase.verifyEqual(kMapOut,expected)
+        end
     end
 end
