@@ -1,4 +1,4 @@
-function kMat = karnaughMap( truthTable, outputSize, columnIndex, varargin )
+function kMat = karnaughMap( truthTable, outputSize, columnIndex, varargin)
 %% Generates a Karnaugh Map matrix from some truthtable and chosen output column
 % truthTable - a binary matrix, "missing" rows will be treated as don't cares
 % ouputSize - array specifying how many variables to 
@@ -35,12 +35,13 @@ if (columnIndex < 1 || columnIndex > numVars + 1)
     error('KMAP:InvalidColumnIndex', 'Column index must fall within the number of columns of the truth table.')
 end
 
-% options = varargin{:}
-
-
+numvarargs = length(varargin);
+optargs = {'X'};
+optargs(1:numvarargs) = varargin;
+[fillerType] = optargs{:};
+    
 %% Initalize
 %%
-dontCare = 'X';
 rowVars = outputSize(1);
 colVars = outputSize(2);
 
@@ -48,7 +49,7 @@ rows = 2^rowVars;
 cols = 2^colVars;
 
 kMat = cell(rows + 1, cols + 1, 1);
-kMat(2:end, 2:end) = {dontCare};
+kMat(2:end, 2:end) = {fillerType};
 
 % TODO: custom label
 %% Labelings
@@ -84,10 +85,24 @@ outputEntries=cellstr(num2str(outputEntries));
 %%
 % Mapping output column to a cell array
 % rows excluding the columnIndex will be mapped to binary values
-rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
-colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
-rowInds = graycode(rowInds) + 2;
-colInds = graycode(colInds) + 2;
+%rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
+%colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
+
+% TODO, optimize binary string to graycode location index on karnaugh map
+rowCodes = kMat(1:end,1);
+colCodes = kMat(1,1:end);
+
+tempRowInds = num2str(trimmedTable(:,1:rowVars),'%d');
+rowInds = ones(length(tempRowInds),1);
+for ii = 1:length(rowInds)
+    rowInds(ii,1) = find(cellfun(@(rowStr) strcmp(rowStr, tempRowInds(ii,:)), rowCodes, 'UniformOutput', 1));
+end
+
+tempColInds = num2str(trimmedTable(:,rowVars+1:end),'%d');
+colInds = ones(length(tempRowInds),1);
+for ii = 1:length(colInds)
+    colInds(ii,1) = find(cellfun(@(rowStr) strcmp(rowStr, tempColInds(ii,:)), colCodes, 'UniformOutput', 1));
+end
 
 linearInds = sub2ind([rows + 1, cols + 1], rowInds, colInds);
 kMat(linearInds) = outputEntries;

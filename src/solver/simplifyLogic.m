@@ -1,7 +1,7 @@
 function logicStrOut = simplifyLogic(logicStrIn)
 %% Simplifies Sum of Products/Product of Sums logic string
 logicStrOut = strrep(logicStrIn,')(',')*(');
-logicStrOut = strrep(logicStrOut, ' ', '');
+logicStrOut = regexprep(logicStrOut, '\+0|\s', '');
 %logicStrOut = str2sym(formatStr);
 
 if (isempty(logicStrOut))

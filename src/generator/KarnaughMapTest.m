@@ -66,8 +66,7 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
                 '1',    '1',    '1';
             };
             testCase.verifyEqual(kMapOut,expected)
-            
-            
+                        
             kMapOut = karnaughMap(...
                 [0 0 0; 0 1 1; 1 0 1; 1 1 1],...
                 [1 1],...

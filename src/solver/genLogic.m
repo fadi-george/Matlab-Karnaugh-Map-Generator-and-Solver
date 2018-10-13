@@ -6,7 +6,8 @@ isMinTerm = strcmp(matchValue,'1');
 fullMatchZero = all(all(strcmp(KMapSelect, '0')));
 fullMatchOne = all(all(strcmp(KMapSelect, '1')));
 [rows, cols] = size(KMapSelect);
-
+[fullRows, fullCols] = size(KMapIn);
+    
 labels = strsplit(KMapIn{1,1}, '\');
 rowLabelLen = length(labels{1});
 colLabelLen = length(labels{2});
@@ -38,7 +39,7 @@ end
 
 if (fullMatchZero || fullMatchOne)
     if ((fullMatchZero & isMinTerm) || (fullMatchOne & ~isMinTerm))
-        logicStr = '';
+        logicStr = '0';
         return;
     end
     
@@ -130,81 +131,67 @@ else
     if (cols > 1)
         colDiv = cols/2;
     end
-    rowStr = '';
-    
     
     % Rows may wrap, so we cycle the inner matrix downwards to mimic this
     % tempStr = '';
-    minLen = Inf;
-    for ii = 1:rowDiv
-        rowShiftInds = circshift(rowInds, ii - 1);
-        
-        rowUpInds = rowShiftInds(1:rowDiv);
+    rowUpperStr = '';
+    rowLowerStr = '';
+    visitedGroupInds = [];
+    if (rowDiv)
+        rowUpInds = rowInds(1:rowDiv);
         rowUpperStr = genLogic(KMapIn, matchValue, rowUpInds, colInds);
         
-        rowLowInds = rowShiftInds(rowDiv+1:end);
-        rowLowerStr = genLogic(KMapIn, matchValue, rowLowInds, colInds);
+        if (rowUpperStr)
+            [r, c] = ndgrid(rowUpInds, colInds);
+            temp = sub2ind([fullRows fullCols], r,c);
+            visitedGroupInds = [visitedGroupInds; temp(:)];
+        end
         
-        if (~isempty(rowUpperStr))
-            if (length(rowUpperStr) < minLen)
-                rowStr = rowUpperStr;
-                minLen = length(rowUpperStr);
-            elseif (length(rowUpperStr) == minLen)
-                rowStr = strjoin({rowStr, rowUpperStr}, groupOp);
+        rowDownInds = rowInds(rowDiv+1:end);
+        rowLowerStr = genLogic(KMapIn, matchValue, rowDownInds, colInds);
+        
+        if (rowLowerStr)
+            [r, c] = ndgrid(rowDownInds, colInds);
+            temp = sub2ind([fullRows fullCols], r,c);
+            visitedGroupInds = [visitedGroupInds; temp(:)];
+        end
+    end
+    tempStr = {rowUpperStr, rowLowerStr};
+    rowStr = strjoin(tempStr, groupOp);
+    
+    colLeftStr = '';
+    colRightStr = '';
+    if (colDiv)
+        
+        colLeftInds = colInds(1:colDiv);
+        [r, c] = ndgrid(rowInds, colLeftInds);
+        
+        temp = sub2ind([fullRows fullCols], r,c);
+        temp = temp(~ismember(temp, visitedGroupInds));
+        
+        if (~isempty(temp))
+            colLeftStr = genLogic(KMapIn, matchValue, rowInds, ind2sub([fullRows, fullCols], temp));
+            if (colLeftStr)
+                visitedGroupInds = [visitedGroupInds; temp(:)];
             end
         end
         
-        if (~isempty(rowLowerStr))
-            if (length(rowLowerStr) < minLen)
-                rowStr = rowLowerStr;
-                minLen = length(rowLowerStr);
-            elseif (length(rowLowerStr) == minLen)
-                rowStr = strjoin({rowStr, rowLowerStr}, groupOp);
+        
+        colRightInds = colInds(colDiv+1:end);
+        [r, c] = ndgrid(rowInds, colRightInds);
+        
+        temp = sub2ind([fullRows fullCols], r,c);
+        temp = temp(~ismember(temp, visitedGroupInds));
+        
+        if (~isempty(temp))
+            colRightStr = genLogic(KMapIn, matchValue, rowInds, ind2sub([fullRows, fullCols], temp));
+            if (colRightStr)
+                visitedGroupInds = [visitedGroupInds; temp(:)];
             end
         end
     end
-    
-    tempStr = unique(strsplit(rowStr, groupOp), 'stable');
-    tempStr = strjoin(tempStr, groupOp);
-    tempStr = regexprep(tempStr, regStr, '');
-    rowStr = tempStr;
-    
-    % Rows may wrap, so we cycle the inner matrix downwards to mimic this
-    % tempStr = '';
-    for ii = 1:colDiv
-        colShiftInds = circshift(colInds, ii - 1);
-        
-        colLeftInds = colShiftInds(1:colDiv);
-        colLeftStr = genLogic(KMapIn, matchValue, rowInds, colLeftInds);
-        
-        colRightInds = colShiftInds(colDiv+1:end);
-        colRightStr = genLogic(KMapIn, matchValue, rowInds, colRightInds);
-        
-        if (~isempty(colLeftStr))
-            if (length(colLeftStr) < minLen)
-                rowStr = '';
-                colStr = colLeftStr;
-                minLen = length(colLeftStr);
-            elseif (length(colLeftStr) == minLen)
-                colStr = strjoin({colStr, colLeftStr}, groupOp);
-            end
-        end
-        
-        if (~isempty(colRightStr))
-            if (length(colRightStr) < minLen)
-                rowStr = '';
-                colStr = colRightStr;
-                minLen = length(colRightStr);
-            elseif (length(colRightStr) == minLen)
-                colStr = strjoin({colStr, colRightStr}, groupOp);
-            end
-        end
-    end
-       
-    tempStr = unique(strsplit(colStr, groupOp), 'stable');
-    tempStr = strjoin(tempStr, groupOp);
-    tempStr = regexprep(tempStr, regStr, '');
-    colStr = tempStr;
+    tempStr = {colLeftStr, colRightStr};
+    colStr = strjoin(tempStr, groupOp);
 end
 
 %% Combine logic strings from row and columns
