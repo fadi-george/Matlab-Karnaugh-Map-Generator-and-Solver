@@ -28,10 +28,8 @@ match = '1';
 if (logicType == 'maxterm')
     match = '0';
 end
-KMap = strrep(KMapIn, 'X', match);
 
-[rows, cols] = size(KMap);
-logicStr = genLogic(KMap, match, [2:rows], [2:cols]);
+logicStr = genLogic2(KMapIn, match);
 logicStr = simplifyLogic(logicStr);
 
 end
