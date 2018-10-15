@@ -17,7 +17,7 @@ for rr = 2:rows
 
             ind = num2str( bin2dec(matchStr) );
             M(ind) = matchStr;
-            matchBuckets{bucketInd} = [matchBuckets{bucketInd}, {ind}];
+            matchBuckets{bucketInd} = [matchBuckets{bucketInd}, qmElement(ind)];
         end
     end
 end
@@ -33,16 +33,18 @@ while (ii < length(matchBuckets))
     moreGroups = 0;    
 
     for strInd = 1:length(startStrs)
-        startStr = M(startStrs{strInd});
+        startStrKey = startStrs(strInd).str;
+        startStr = M(startStrKey);
 
         for endInd = 1:length(endStrs)
-            endStr = M(endStrs{endInd});
+            endStrKey = endStrs(endInd).str;
+            endStr = M(endStrKey);
 
             % Comparing string difference
             diffInds = (startStr - '0') ~= (endStr - '0');
             if (sum(diffInds) == 1)
 
-                combinedInds = sort(str2num([startStrs{strInd}, ' ', endStrs{endInd}]));
+                combinedInds = sort(str2num([startStrKey, ' ', endStrKey]));
                 combinedInds = sprintf('%d,', combinedInds);
                 combinedInds = combinedInds(1:end-1);
 
@@ -55,13 +57,19 @@ while (ii < length(matchBuckets))
                     M(combinedInds) = strDiff;
 
                     if (length(matchBuckets) == lastInd)
-                        matchBuckets{lastInd} = [matchBuckets{lastInd}, {combinedInds}];  
+                        matchBuckets{lastInd} = [matchBuckets{lastInd}, qmElement(combinedInds)];  
                     else
-                        matchBuckets(lastInd) = {{combinedInds}};
+                        matchBuckets(lastInd) = {qmElement(combinedInds)};
                     end
+                    
+                    matchBuckets{ii}(strInd).checked = 1;
+                    matchBuckets{ii + 1}(endInd).checked = 1;
                 else
-                  %moreGroups = 1;
+                    matchBuckets{ii}(strInd).checked = 1;
+                    matchBuckets{ii + 1}(endInd).checked = 1;
                 end
+                
+                
             end
         end
     end
@@ -71,6 +79,13 @@ while (ii < length(matchBuckets))
     end
 end
 
-%matchBuckets = matchBuckets(~cellfun('isempty',matchBuckets));
+% Extracting "unchecked" strings (ones without pairs)
+matchBuckets = horzcat(matchBuckets{:});
+matchBuckets = findobj(matchBuckets, 'checked', 0);
+
+%% Prime Implicants
+
+
+
 end
 
