@@ -29,7 +29,7 @@ if (logicType == 'maxterm')
     match = '0';
 end
 
-logicStr = genLogic2(KMapIn, match);
+logicStr = genLogic(KMapIn, match);
 logicStr = simplifyLogic(logicStr);
 
 end
