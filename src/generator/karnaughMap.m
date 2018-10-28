@@ -1,4 +1,4 @@
-function kMat = karnaughMap( truthTable, outputSize, columnIndex, varargin )
+function kMat = karnaughMap(truthTableOrStr, outputSize, varargin)
 %% Generates a Karnaugh Map matrix from some truthtable and chosen output column
 % truthTable - a binary matrix, "missing" rows will be treated as don't cares
 % ouputSize - array specifying how many variables to 
@@ -6,10 +6,45 @@ function kMat = karnaughMap( truthTable, outputSize, columnIndex, varargin )
 
 %% Validate Inputs
 %%
+truthTable = truthTableOrStr;
+numVars = sum(outputSize);
+
+numvarargs = length(varargin);
+optargs = {'X'};
+
+if (ischar(truthTableOrStr))
+    % Non-valid string
+    if (~regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)$'))
+        error(...
+        'KMAP:InvalidStr',...
+        'Function string must begin with "m" (for minterm) or "M" (for maxterm) followed by numbers (comma seperated) enclosed in paranthesis.' ...
+        );
+    else
+        [truthTable, I, J] = unique(str2num(truthTableOrStr(3:end-1)));
+        
+        isMinTerm = 1;
+        outputCol = ones(length(truthTable),1);
+        optargs{1} = '0';
+        if (truthTableOrStr(1) == 'M')
+            isMinTerm = 0;
+            outputCol = outputCol - 1;
+            optargs{1} = '1';
+        end
+        
+        % transforming numbers from string to binary representation
+        if (length(I) ~= length(J))
+            warning('String contains duplicate entries');
+        end
+        truthTable = str2double(num2cell(dec2bin(truthTable)));
+        
+        % padding with output column
+        truthTable = [truthTable outputCol];
+    end
+end
+
 % Invaid truth table
 [tr tc] = size(truthTable);
 isEmpty = sum(tr + tc) == 0;
-numVars = sum(outputSize);
 
 if (all(truthTable(:) <= 1 & truthTable(:) >= 0) == 0)
     error('KMAP:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
@@ -30,17 +65,11 @@ if (~isEmpty && numVars ~= tc - 1)
     error('KMAP:InvalidNumVars', 'Number of variables must be one less than the number of columns of the truth table.')
 end
 
-% Invalid column
-if (columnIndex < 1 || columnIndex > numVars + 1)
-    error('KMAP:InvalidColumnIndex', 'Column index must fall within the number of columns of the truth table.')
-end
-
-% options = varargin{:}
-
-
+optargs(1:numvarargs) = varargin;
+[fillerType] = optargs{:};
+    
 %% Initalize
 %%
-dontCare = 'X';
 rowVars = outputSize(1);
 colVars = outputSize(2);
 
@@ -48,7 +77,7 @@ rows = 2^rowVars;
 cols = 2^colVars;
 
 kMat = cell(rows + 1, cols + 1, 1);
-kMat(2:end, 2:end) = {dontCare};
+kMat(2:end, 2:end) = {fillerType};
 
 % TODO: custom label
 %% Labelings
@@ -66,9 +95,9 @@ end
 
 %% Checking duplicates
 %%
-outputEntries = truthTable(:,columnIndex);
+outputEntries = truthTable(:,end);
 trimmedTable = truthTable;
-trimmedTable(:,columnIndex) = [];
+trimmedTable(:,end) = [];
 [trimmedTable, R, L] = unique(trimmedTable, 'rows', 'stable');
 outputEntries = outputEntries(R);
 
@@ -83,11 +112,13 @@ outputEntries=cellstr(num2str(outputEntries));
 %% Map Rows to Map
 %%
 % Mapping output column to a cell array
-% rows excluding the columnIndex will be mapped to binary values
+% rows excluding the last column will be mapped to binary values
 rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
 colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
-rowInds = graycode(rowInds) + 2;
-colInds = graycode(colInds) + 2;
+
+% Performing graycode inverse and offsetting for placement
+rowInds = graycodeInv(rowInds) + 2;
+colInds = graycodeInv(colInds) + 2;
 
 linearInds = sub2ind([rows + 1, cols + 1], rowInds, colInds);
 kMat(linearInds) = outputEntries;

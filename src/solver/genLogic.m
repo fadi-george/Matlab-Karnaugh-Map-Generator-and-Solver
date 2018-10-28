@@ -1,218 +1,132 @@
-function logicStr = genLogic(KMapIn, matchValue, rowInds, colInds)
-%%
-KMapSelect = KMapIn(rowInds, colInds);
-isMinTerm = strcmp(matchValue,'1');
+function logicStr = genLogic(KMapIn, matchValue)
+%% Quine-McCluskey Approach
+% https://en.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
+numVars = length(KMapIn{1,1});
+labels = strjoin(strsplit(KMapIn{1,1}, '\'), '');
+[rows, cols] = size(KMapIn);
 
-fullMatchZero = all(all(strcmp(KMapSelect, '0')));
-fullMatchOne = all(all(strcmp(KMapSelect, '1')));
-[rows, cols] = size(KMapSelect);
+% Buckets for number of ones/zeros
+matchBuckets = cell(numVars, 1);
+M = containers.Map();
+MinMaxInds = [];
 
-labels = strsplit(KMapIn{1,1}, '\');
-rowLabelLen = length(labels{1});
-colLabelLen = length(labels{2});
+% Find indices of matching term from the Karanugh Map
+for rr = 2:rows
+    for cc = 2:cols
+        if (strcmp(KMapIn(rr,cc), matchValue) || strcmp(KMapIn(rr,cc), 'X'))
+            matchStr = strcat(KMapIn{rr,1},KMapIn{1,cc});
+            bucketInd = count(matchStr, matchValue) + 1;
 
-%% For regexp string simplification
-cellOp = '*';
-groupOp = '+';
-if (~isMinTerm)
-    cellOp = '+';
-    groupOp = '*';
-end
-regStr = '(^\+*|^\**)|(\+*$|\**$)';
-
-%% All values matched the search term
-%%
-rowStr = '';
-colStr = '';
-
-if (rows == 2^rowLabelLen && cols == 2^colLabelLen)
-    if (fullMatchZero)
-        logicStr = '0';
-        return;
-    end
-    if (fullMatchOne)
-        logicStr = '1';
-        return;
+            ind = num2str( bin2dec(matchStr) );
+            M(ind) = matchStr;
+            matchBuckets{bucketInd} = [matchBuckets{bucketInd}, qmElement(ind, matchStr)];
+        end
     end
 end
 
-if (fullMatchZero || fullMatchOne)
-    if ((fullMatchZero & isMinTerm) || (fullMatchOne & ~isMinTerm))
-        logicStr = '';
-        return;
-    end
-    
-    % Must check which portions of the gray code stays the same
-    binRowMat = cell2mat( cellfun(@(str) str - '0', KMapIn(rowInds, 1),'un',0) );
-    binColMat = cell2mat( cellfun(@(str) str - '0', KMapIn(1, colInds)','un',0) );
+%% 1. Finding the prime implicants
+ii = 1;
+while (ii < length(matchBuckets))
+        
+    % Comparing string from one bucket to the next bucket
+    startStrs = matchBuckets{ii};
+    endStrs = matchBuckets{ii + 1};
+    lastInd = length(matchBuckets) + 1;
+    moreGroups = 0;    
 
-    % In case of a single row/column, difference in the graycodes will be 0
-    labelRowInds = logical(~diff(binRowMat));
-    barRowInds = logical(all(binRowMat == 0));
-    labelColInds = logical(~diff(binColMat));
-    barColInds = logical(all(binColMat == 0));
+    for strInd = 1:length(startStrs)
+        startStrKey = startStrs(strInd).indStr;
+        startStr = M(startStrKey);
 
-    [bRows, ~] = size(binRowMat);
-    if (bRows == 1)
-        labelRowInds = true(rowLabelLen,1);
-        barRowInds = logical(binRowMat == 0);
-    end
-    [bRows, ~] = size(binColMat);
-    if (bRows == 1)
-        labelColInds = true(colLabelLen,1);
-        barColInds = logical(binColMat == 0);
-    end
-    
-    % Extract label letters that match with graycode positions that
-    % don't change
-    % In the case of one row/col, we keep all the letters
-    
-    % In case of one row/col, we only keep "bar" symbols for positions
-    % where they are 0 or 1 depending or not if it is a minterm or
-    % maxterm expression
-    if (~isMinTerm)
-        barRowInds = ~barRowInds;
-        barColInds = ~barColInds;
-    end
-    
-    if (rows < 2^rowLabelLen)
-        bars = repmat('~', 1, rowLabelLen);
-        bars(~barRowInds) = ' ';
-            
-        rowStr = labels{1};
-        rowStr(~labelRowInds) = ' ';
+        for endInd = 1:length(endStrs)
+            endStrKey = endStrs(endInd).indStr;
+            endStr = M(endStrKey);
 
-        rowStr = cellstr((vertcat(bars, rowStr)'));
-        rowStr = rowStr(~(strcmp(rowStr, '~') | strcmp(rowStr, '')));
-        rowStr = strjoin(rowStr, cellOp);
-    end
-    if (cols < 2^colLabelLen)
-        bars = repmat('~', 1, colLabelLen);
-        bars(~barColInds) = ' ';
+            % Comparing string difference
+            diffInds = (startStr - '0') ~= (endStr - '0');
+            if (sum(diffInds) == 1)
 
-        colStr = labels{2};
-        colStr(~labelColInds) = ' ';
-        
-        colStr = cellstr((vertcat(bars, colStr)'));
-        colStr = colStr(~(strcmp(colStr, '~') | strcmp(colStr, '')));
-        colStr = strjoin(colStr, cellOp);
-    end
-    
-    
-    if (~isempty(rowStr))
-        rowStr = strcat('(', rowStr);
-        if (isempty(colStr))
-            rowStr = strcat(rowStr, ')');
-        end
-    end
-    if (~isempty(colStr))
-        colStr = strcat(colStr, ')');
-        if (isempty(rowStr))
-            colStr = strcat('(', colStr);
-        end
-    end
-    
-    if (~isempty(rowStr) && ~isempty(colStr))
-        logicStr = strjoin({rowStr, colStr}, cellOp);
-        return;
-    end
-else
-    %% Divide areas by 2 but also wrapping around
-    %%
-    %visitedRowInds = [];
-    rowDiv = 0;
-    colDiv = 0;
-    
-    % Recusrive sub-dvisions of the original array
-    if (rows > 1)
-        rowDiv = rows/2;
-    end
-    if (cols > 1)
-        colDiv = cols/2;
-    end
-    rowStr = '';
-    
-    
-    % Rows may wrap, so we cycle the inner matrix downwards to mimic this
-    % tempStr = '';
-    minLen = Inf;
-    for ii = 1:rowDiv
-        rowShiftInds = circshift(rowInds, ii - 1);
-        
-        rowUpInds = rowShiftInds(1:rowDiv);
-        rowUpperStr = genLogic(KMapIn, matchValue, rowUpInds, colInds);
-        
-        rowLowInds = rowShiftInds(rowDiv+1:end);
-        rowLowerStr = genLogic(KMapIn, matchValue, rowLowInds, colInds);
-        
-        if (~isempty(rowUpperStr))
-            if (length(rowUpperStr) < minLen)
-                rowStr = rowUpperStr;
-                minLen = length(rowUpperStr);
-            elseif (length(rowUpperStr) == minLen)
-                rowStr = strjoin({rowStr, rowUpperStr}, groupOp);
-            end
-        end
-        
-        if (~isempty(rowLowerStr))
-            if (length(rowLowerStr) < minLen)
-                rowStr = rowLowerStr;
-                minLen = length(rowLowerStr);
-            elseif (length(rowLowerStr) == minLen)
-                rowStr = strjoin({rowStr, rowLowerStr}, groupOp);
+                combinedInds = sort(str2num([startStrKey, ' ', endStrKey]));
+                MinMaxInds = unique([MinMaxInds combinedInds]);
+                combinedInds = sprintf('%d,', combinedInds);
+                combinedInds = combinedInds(1:end-1);
+
+                %% Skip if not unique combination
+                if (~isKey(M, combinedInds))
+                    % Add to queue
+                    moreGroups = 1;
+                    strDiff = startStr;
+                    strDiff(diffInds) = '-';
+                    M(combinedInds) = strDiff;
+
+                    if (length(matchBuckets) == lastInd)
+                        matchBuckets{lastInd} = [matchBuckets{lastInd}, qmElement(combinedInds, strDiff)];  
+                    else
+                        matchBuckets(lastInd) = {qmElement(combinedInds, strDiff)};
+                    end
+                    
+                    matchBuckets{ii}(strInd).checked = 1;
+                    matchBuckets{ii + 1}(endInd).checked = 1;
+                else
+                    matchBuckets{ii}(strInd).checked = 1;
+                    matchBuckets{ii + 1}(endInd).checked = 1;
+                end
+                
+                
             end
         end
     end
-    
-    tempStr = unique(strsplit(rowStr, groupOp), 'stable');
-    tempStr = strjoin(tempStr, groupOp);
-    tempStr = regexprep(tempStr, regStr, '');
-    rowStr = tempStr;
-    
-    % Rows may wrap, so we cycle the inner matrix downwards to mimic this
-    % tempStr = '';
-    for ii = 1:colDiv
-        colShiftInds = circshift(colInds, ii - 1);
         
-        colLeftInds = colShiftInds(1:colDiv);
-        colLeftStr = genLogic(KMapIn, matchValue, rowInds, colLeftInds);
-        
-        colRightInds = colShiftInds(colDiv+1:end);
-        colRightStr = genLogic(KMapIn, matchValue, rowInds, colRightInds);
-        
-        if (~isempty(colLeftStr))
-            if (length(colLeftStr) < minLen)
-                rowStr = '';
-                colStr = colLeftStr;
-                minLen = length(colLeftStr);
-            elseif (length(colLeftStr) == minLen)
-                colStr = strjoin({colStr, colLeftStr}, groupOp);
-            end
-        end
-        
-        if (~isempty(colRightStr))
-            if (length(colRightStr) < minLen)
-                rowStr = '';
-                colStr = colRightStr;
-                minLen = length(colRightStr);
-            elseif (length(colRightStr) == minLen)
-                colStr = strjoin({colStr, colRightStr}, groupOp);
-            end
-        end
+    if (~moreGroups)
+        ii = ii + 1;
     end
-       
-    tempStr = unique(strsplit(colStr, groupOp), 'stable');
-    tempStr = strjoin(tempStr, groupOp);
-    tempStr = regexprep(tempStr, regStr, '');
-    colStr = tempStr;
 end
 
-%% Combine logic strings from row and columns
-%%
-tempStr = unique(strsplit(strjoin({rowStr, colStr}, groupOp), groupOp), 'stable');
-tempStr = strjoin(tempStr, groupOp);
-logicStr = regexprep(tempStr, regStr, '');
-logicStr = char(logicStr);
+% Extracting "unchecked" strings (ones without pairs)
+matchBuckets = horzcat(matchBuckets{:});
+matchBuckets = findobj(matchBuckets, 'checked', 0);
 
+%% 2. Prime Implicant Chart
+primeArr =  zeros(length(matchBuckets), length(MinMaxInds));
+numMarks = 0;
+for ii = 1:length(matchBuckets)
+    el = matchBuckets(ii);
+    % mark placement onto prime implicant array
+    [~,ei,mi] = intersect(str2num(el.indStr), MinMaxInds);
+    
+    numMarks = numMarks + length(mi);
+    primeArr(ii, mi) = 1;
+end
+
+%% 3. Extracting prime implicants
+pStrCell = {};
+strOp = '+';
+if (matchValue == '0')
+    strOp = '*';
+end
+
+while (numMarks)
+    temp = sum(primeArr) == 1;
+    
+    % If no prime column found, check against rows with biggest count
+    if (sum(temp) == 0)
+        [~,pRowInd] = max(sum(primeArr,2));
+    else
+        tempInds = find(temp);
+        pColInd = tempInds(1);
+        pRowInd = find(primeArr(:,pColInd));
+    end
+    
+    % mark off checked off row/columns
+    pColInds = find(primeArr(pRowInd, :));
+    pColArr = primeArr(:, pColInds);
+    numMarks = numMarks - sum(sum(pColArr));
+    primeArr(:, pColInds) = 0;
+    
+    tempStr = genStr(matchBuckets(pRowInd), labels, matchValue);
+    pStrCell(end + 1) = {tempStr};
+end
+
+logicStr = strjoin(pStrCell, '+');
 end
 
