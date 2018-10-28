@@ -63,8 +63,5 @@ classdef qmElement < handle
             str = strcat('(', str, ')');    
         end
     end
-    
-    methods(Static)
-    end
 end
 

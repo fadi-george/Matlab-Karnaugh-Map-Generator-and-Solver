@@ -14,13 +14,20 @@ optargs = {'X'};
 
 if (ischar(truthTableOrStr))
     % Non-valid string
-    if (~regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)$'))
+    if (isempty(regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)(\s*\+\s*(d)\((\d+)(,\s*\d+)*\))*$')))
         error(...
         'KMAP:InvalidStr',...
         'Function string must begin with "m" (for minterm) or "M" (for maxterm) followed by numbers (comma seperated) enclosed in paranthesis.' ...
         );
     else
-        [truthTable, I, J] = unique(str2num(truthTableOrStr(3:end-1)));
+        % Extract minterms/maxterms and dont-cares if provided
+        matchCell = regexp(truthTableOrStr, '(\d+)(,\s*\d+)*', 'match');
+        dontCares = [];
+        
+        [truthTable, I, J] = unique(str2num(matchCell{1}));
+        if (length(matchCell) == 2)
+            [dontCares, DI, DJ] = unique(str2num(matchCell{2}));
+        end
         
         isMinTerm = 1;
         outputCol = ones(length(truthTable),1);
@@ -33,9 +40,16 @@ if (ischar(truthTableOrStr))
         
         % transforming numbers from string to binary representation
         if (length(I) ~= length(J))
-            warning('String contains duplicate entries');
+            warning('Minterm/Maxterm string contains duplicate values.');
+        end
+        if (length(matchCell) == 2 && length(DI) ~= length(DJ))
+            warning('Don''''t cares string contains duplicate values.');
+        end
+        if (intersect(a,b))
+            error('KMAP:Duplicates', 'Minterm/maxterms contain one or more matching values with don''''t cares');
         end
         truthTable = str2double(num2cell(dec2bin(truthTable)));
+        dontCares = str2double(num2cell(dec2bin(dontCares)));
         
         % padding with output column
         truthTable = [truthTable outputCol];
@@ -88,7 +102,7 @@ kMat(1,1,1) = {str};
 % Gray codes
 kMat(2:rows+1,1) = cellstr(dec2bin(graycode(0:rows-1),rowVars));
 kMat(1,2:cols+1) = cellstr(dec2bin(graycode(0:cols-1),colVars));
-
+b
 if (isEmpty)
     return;
 end
