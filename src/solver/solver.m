@@ -30,7 +30,6 @@ if (logicType == 'maxterm')
 end
 
 logicStr = genLogic(KMapIn, match);
-logicStr = simplifyLogic(logicStr);
 
 end
 

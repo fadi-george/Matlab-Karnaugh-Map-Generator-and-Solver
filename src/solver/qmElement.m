@@ -40,27 +40,39 @@ classdef qmElement < handle
                 error('QMElem: Invalid number of characters to use for labels.');
             end
             
-            str = labels;
-            bars = repmat('~', 1, length(bStr));
-            
-            % Matching labels to binary positions
-            str(bStr == '-') = ' ';
-            
-            % adding "bars" (negations) if needed
-            barMatchVal = '1';
-            groupOp = '+';
+            % strcmp(bStr, repmat('-', length(labels), 1)
+            %obj.indStr
+            %length(obj.indStr)
+            %2^(length(labels) + 1) - 1
+            if (length(obj.indStr) == 2^(length(labels) + 1) - 1)
+                if (isMinTerm)
+                    str = '1';
+                else
+                    str = '0';
+                end
+            else
+                str = labels;
+                bars = repmat('~', 1, length(bStr));
 
-            if (isMinTerm)
-                barMatchVal = '0';
-                groupOp = '*';
+                % Matching labels to binary positions
+                str(bStr == '-') = ' ';
+
+                % adding "bars" (negations) if needed
+                barMatchVal = '1';
+                groupOp = '+';
+
+                if (isMinTerm)
+                    barMatchVal = '0';
+                    groupOp = '*';
+                end
+                bars(bStr ~= barMatchVal) = ' ';
+
+                % stripping empty chars
+                temp = strtrim(cellstr(vertcat(bars,str)'));
+                temp(strcmp('',temp)) = [];
+                str = strjoin(temp, groupOp);
+                str = strcat('(', str, ')');    
             end
-            bars(bStr ~= barMatchVal) = ' ';
-           
-            % stripping empty chars
-            temp = strtrim(cellstr(vertcat(bars,str)'));
-            temp(strcmp('',temp)) = [];
-            str = strjoin(temp, groupOp);
-            str = strcat('(', str, ')');    
         end
     end
 end

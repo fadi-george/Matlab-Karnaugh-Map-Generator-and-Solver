@@ -40,7 +40,8 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
             );
         end
         
-        % Validation of Outputs
+        %% Validation of Outputs
+        % Binary inputs
         function testValidKmap(testCase)
             kMapOut = karnaughMap(...
                 [0 0 0; 0 1 1; 1 0 1; 1 1 1],...
@@ -62,7 +63,7 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
                 '0',    '0',    '1';
                 '1',    'X',    'X';
             };
-            testCase.verifyEqual(kMapOut,expected)
+            testCase.verifyEqual(kMapOut,expected);
         end
         
         function testLargeKMaps(testCase)
@@ -87,7 +88,32 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
                 '11',       '0',    '0',    '0',    '0',    '0',    '1',    '1',    '0';
                 '10',       '0',    '1',    '1',    '0',    '0',    '1',    '0',    '0';
             };
-            testCase.verifyEqual(kMapOut,expected)
+            testCase.verifyEqual(kMapOut,expected);
+        end
+        
+        % Minterm/Maxterm Strings
+        function testMinTermStr(testCase)
+            kMapOut = karnaughMap('m(0,4,5,7,8,11,12,15)', [2, 2]);
+            expected = {
+                'AB\CD',    '00',   '01',   '11',   '10';
+                '00',       '1',    '0',    '0',    '0';
+                '01',       '1',    '1',    '1',    '0';
+                '11',       '1',    '0',    '1',    '0';
+                '10',       '1',    '0',    '1',    '0';
+            };
+            testCase.verifyEqual(kMapOut,expected);
+        end
+        
+        function testMinTermDontCareStr(testCase)
+            kMapOut = karnaughMap('m(4,6,9,10,11,13)+d(2,12,15)', [2, 2]);
+            expected = {
+                'AB\CD',    '00',   '01',   '11',   '10';
+                '00',       '0',    '0',    '0',    'X';
+                '01',       '1',    '0',    '0',    '1';
+                '11',       'X',    '1',    'X',    '0';
+                '10',       '0',    '1',    '1',    '1';
+            };
+            testCase.verifyEqual(kMapOut,expected);
         end
     end
 end
