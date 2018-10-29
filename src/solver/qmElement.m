@@ -34,18 +34,17 @@ classdef qmElement < handle
         end
         
         %% Generate string representations with some characters
-        function str = genStr(obj, labels, isMinTerm)
+        function str = genStr(obj, labels, matchVal)
             bStr = obj.binStr;
+            isMinTerm = strcmp(num2str(matchVal), '1');
+            
             if (length(labels) ~= length(bStr))
                 error('QMElem: Invalid number of characters to use for labels.');
             end
             
-            % strcmp(bStr, repmat('-', length(labels), 1)
-            %obj.indStr
-            %length(obj.indStr)
-            %2^(length(labels) + 1) - 1
-            if (length(obj.indStr) == 2^(length(labels) + 1) - 1)
-                if (isMinTerm)
+            stopStr = repmat('-', 1, length(labels));
+            if (strcmp(bStr, stopStr))
+                if (strcmp(isMinTerm, '1'))
                     str = '1';
                 else
                     str = '0';

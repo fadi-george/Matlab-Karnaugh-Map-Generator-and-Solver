@@ -7,7 +7,17 @@ numVars = length(labels);
 
 %% Pre-liminary Solving
 % Checking if matrix is all ones or all zeros
+allZeros = all(all(strcmp(KMapIn(2:end, 2:end), '0')));
+allOnes = all(all(strcmp(KMapIn(2:end, 2:end), '1'))); 
 
+if (allZeros)
+    logicStr = '0';
+    return;
+end
+if (allOnes)
+    logicStr = '1';
+    return;
+end
 
 % Buckets for number of ones/zeros
 matchBuckets = cell(numVars + 1, 1);
@@ -30,7 +40,7 @@ end
 
 %% 1. Finding the prime implicants
 ii = 1;
-%stopStr = repmat('-', 1, numVars);
+stopStr = repmat('-', 1, numVars);
 while (ii < length(matchBuckets))
         
     % Comparing string from one bucket to the next bucket
@@ -46,7 +56,7 @@ while (ii < length(matchBuckets))
             endStrKey = endStrs(endInd).indStr;
             endStr = M(endStrKey);
             
-            if (length(endStrKey) == 2^(numVars + 1) - 1)
+            if (strcmp(endStr, stopStr))
                 break;
             end
 
@@ -138,6 +148,6 @@ while (numMarks)
     pStrCell(end + 1) = {tempStr};
 end
 
-logicStr = strjoin(pStrCell, '+');
+logicStr = strjoin(pStrCell, strOp);
 end
 
