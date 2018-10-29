@@ -24,6 +24,7 @@ matchBuckets = cell(numVars + 1, 1);
 M = containers.Map();
 
 % Find indices of matching term from the Karanugh Map
+MinMaxInds = [];
 for rr = 2:rows
     for cc = 2:cols
         if (strcmp(KMapIn(rr,cc), matchValue) || strcmp(KMapIn(rr,cc), 'X'))
@@ -32,6 +33,11 @@ for rr = 2:rows
 
             ind = num2str( bin2dec(matchStr) );
             M(ind) = matchStr;
+            
+            if (strcmp(KMapIn(rr,cc), matchValue))
+                MinMaxInds = unique([MinMaxInds str2num(ind)]);
+            end
+            
             matchBuckets{bucketInd} = [matchBuckets{bucketInd}, qmElement(ind, matchStr)];
         end
     end
@@ -107,12 +113,6 @@ end
 % Extracting "unchecked" strings (ones without pairs)
 matchBuckets = horzcat(matchBuckets{:});
 matchBuckets = findobj(matchBuckets, 'checked', 0);
-
-% TODO: Dont Cares
-MinMaxInds = [];
-for ii = 1:length(matchBuckets)
-    MinMaxInds = unique([MinMaxInds str2num(matchBuckets(ii).indStr)]);
-end
 
 %% 2. Prime Implicant Chart
 primeArr =  zeros(length(matchBuckets), length(MinMaxInds));
