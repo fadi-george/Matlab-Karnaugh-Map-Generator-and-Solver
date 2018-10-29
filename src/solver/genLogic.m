@@ -22,7 +22,6 @@ end
 % Buckets for number of ones/zeros
 matchBuckets = cell(numVars + 1, 1);
 M = containers.Map();
-MinMaxInds = [];
 
 % Find indices of matching term from the Karanugh Map
 for rr = 2:rows
@@ -37,6 +36,9 @@ for rr = 2:rows
         end
     end
 end
+
+% Delete empty rows
+matchBuckets(all(cellfun('isempty',matchBuckets),2),:) = [];
 
 %% 1. Finding the prime implicants
 ii = 1;
@@ -66,7 +68,6 @@ while (ii < length(matchBuckets))
             if (sum(diffInds) == 1)
 
                 combinedInds = sort(str2num([startStrKey, ' ', endStrKey]));
-                MinMaxInds = unique([MinMaxInds combinedInds]);
                 combinedInds = sprintf('%d,', combinedInds);
                 combinedInds = combinedInds(1:end-1);
 
@@ -106,6 +107,12 @@ end
 % Extracting "unchecked" strings (ones without pairs)
 matchBuckets = horzcat(matchBuckets{:});
 matchBuckets = findobj(matchBuckets, 'checked', 0);
+
+% TODO: Dont Cares
+MinMaxInds = [];
+for ii = 1:length(matchBuckets)
+    MinMaxInds = unique([MinMaxInds str2num(matchBuckets(ii).indStr)]);
+end
 
 %% 2. Prime Implicant Chart
 primeArr =  zeros(length(matchBuckets), length(MinMaxInds));

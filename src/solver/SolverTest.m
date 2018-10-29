@@ -278,7 +278,7 @@ classdef SolverTest < matlab.unittest.TestCase
                 '10',       '1',    '0',    '0',    '1';
             };
             verifyEqual(testCase, solver(K), '(~B*~D)');
-            verifyEqual(testCase, solver(K,'maxterm'), '(~B)*(~D)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(~D)*(~B)');
             
             
             K = {
@@ -323,8 +323,8 @@ classdef SolverTest < matlab.unittest.TestCase
                 '10',       '0',    '1',    '0',    '1';
             };
             
-            verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*B*~C*~D)+(A*B*C*D)+(A*~B*~C*D)+(A*~B*C*~D)');
-            verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(~A+B+~C+~D)');
+            verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*~B*~C*D)+(A*~B*C*~D)+(A*B*~C*~D)+(A*B*C*D)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+B+C+D)*(~A+B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)');
         end
     end
 end
