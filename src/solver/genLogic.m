@@ -1,14 +1,17 @@
 function logicStr = genLogic(KMapIn, matchValue)
 %% Quine-McCluskey Approach
 % https://en.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
+% For a given K-Map (constructor from generator), it will construct the
+% solution by finding the prime implicants
 labels = strjoin(strsplit(KMapIn{1,1}, '\'), '');
 numVars = length(labels);
 [rows, cols] = size(KMapIn);
 
 %% Pre-liminary Solving
-% Checking if matrix is all ones or all zeros
+% Checking if matrix is all ones or all zeros or all don't cares
 allZeros = all(all(strcmp(KMapIn(2:end, 2:end), '0')));
-allOnes = all(all(strcmp(KMapIn(2:end, 2:end), '1'))); 
+allOnes = all(all(strcmp(KMapIn(2:end, 2:end), '1')));
+allDontCares = all(all(strcmp(KMapIn(2:end, 2:end), 'X')));
 
 if (allZeros)
     logicStr = '0';
@@ -16,6 +19,10 @@ if (allZeros)
 end
 if (allOnes)
     logicStr = '1';
+    return;
+end
+if (allDontCares)
+    logicStr = 'X';
     return;
 end
 
@@ -155,6 +162,15 @@ while (numMarks)
     pStrCell(end + 1) = {tempStr};
 end
 
-logicStr = strjoin(pStrCell, strOp);
+if (isempty(pStrCell))
+    if (find(cell2mat(KMapIn(2:end, 2:end)) == '1'))
+        logicStr = '1';
+    else
+        logicStr = '0';
+    end
+else
+    logicStr = strjoin(pStrCell, strOp);
+end
+
 end
 

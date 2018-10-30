@@ -102,6 +102,14 @@ classdef KarnaughMapTest < matlab.unittest.TestCase
                 '10',       '1',    '0',    '1',    '0';
             };
             testCase.verifyEqual(kMapOut,expected);
+            
+            kMapOut = karnaughMap('m(0)', [1, 1], 'X');
+            expected = {
+                'A\B',  '0',    '1';
+                '0',    '1',    'X';
+                '1',    'X',    'X';
+            };
+            testCase.verifyEqual(kMapOut,expected);
         end
         
         function testMinTermDontCareStr(testCase)

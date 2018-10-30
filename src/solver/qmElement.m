@@ -1,9 +1,16 @@
 classdef qmElement < handle
-    %% Quine-McCluskey Row Element
+    %% Solver Helper Element
     
     properties
+        % Quine-McCluskey approach requires keeping track of used values,
+        % hence we use this "checked" flag
         checked = 0;
+        
+        % Combinations from other elements, e.g. '0,1' and '2,3'
         indStr;
+        
+        % The actual match characters between other elements, will contain
+        % characters: '0', '1', '-' (extraneous row/col)
         binStr;
     end
     
@@ -44,7 +51,7 @@ classdef qmElement < handle
             
             stopStr = repmat('-', 1, length(labels));
             if (strcmp(bStr, stopStr))
-                if (strcmp(isMinTerm, '1'))
+                if (isMinTerm)
                     str = '1';
                 else
                     str = '0';

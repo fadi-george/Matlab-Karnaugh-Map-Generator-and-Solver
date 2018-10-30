@@ -80,6 +80,35 @@ classdef SolverTest < matlab.unittest.TestCase
             verifyEqual(testCase, solver(K,'maxterm'), '0');
         end
         
+        %% Dont Cares
+        function testDontCares(testCase)
+            K = {
+                'A\B',  '0',    '1';
+                '0',    'X',    'X';
+                '1',    'X',    'X';
+            };
+            verifyEqual(testCase, solver(K), 'X');
+            verifyEqual(testCase, solver(K,'maxterm'), 'X');
+            
+            K = {
+                'A\BC', '00',   '01',   '11',   '10';
+                '0',    'X',    'X',    'X',    'X';
+                '1',    'X',    'X',    'X',    'X';
+            };
+            verifyEqual(testCase, solver(K), 'X');
+            verifyEqual(testCase, solver(K,'maxterm'), 'X');
+            
+            K = {
+                'AB\CD',    '00',   '01',   '11',   '10';
+                '00',       'X',    'X',    'X',    'X';
+                '01',       'X',    'X',    'X',    'X';
+                '11',       'X',    'X',    'X',    'X';
+                '10',       'X',    'X',    'X',    'X';
+            };
+            verifyEqual(testCase, solver(K), 'X');
+            verifyEqual(testCase, solver(K,'maxterm'), 'X');
+        end
+        
         %% Upper Half of Ones
         function testUpper(testCase)
             K = {
@@ -326,6 +355,26 @@ classdef SolverTest < matlab.unittest.TestCase
             verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*~B*~C*D)+(A*~B*C*~D)+(A*B*~C*~D)+(A*B*C*D)');
             verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+B+C+D)*(~A+B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)');
         end
+        
+        %% Dont Cares
+        function testWithDontCare(testCase)
+            K = {
+                'A\B',  '0',    '1';
+                '0',    '1',    'X';
+                '1',    'X',    'X';
+            };
+            verifyEqual(testCase, solver(K), '1');
+            verifyEqual(testCase, solver(K,'maxterm'), '1');
+            
+            K = {
+                'A\B',  '0',    '1';
+                '0',    '0',    'X';
+                '1',    'X',    'X';
+            };
+            verifyEqual(testCase, solver(K), '0');
+            verifyEqual(testCase, solver(K,'maxterm'), '0');
+        end
+        
         
         %% Optimal
         function testOptimal_1(testCase)

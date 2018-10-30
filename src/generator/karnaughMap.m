@@ -1,7 +1,27 @@
 function kMat = karnaughMap(truthTableOrStr, outputSize, varargin)
 %% Generates a Karnaugh Map matrix from some truthtable and chosen output column
-% truthTable - a binary matrix, "missing" rows will be treated as don't cares
-% ouputSize - array specifying how many variables to 
+% truthTable    - truthTableOrStr: a binary matrix, "missing" rows will be treated as don't cares
+%               e.g. [0 0 0; 0 1 1; 1 0 1; 1 1 1] ("or" operation)
+%               
+%               or a string beginning or "m" (for minterms) or "M" for
+%               matrixs and comma seperated numbers enclosed in parentheses
+%               dont cares can also be included in a similar fashion
+%               (starts with "d" and uses comma seperated values enclosed
+%               in parentheses)
+%               e.g. 'm(1,2,3)' ("or" operation)
+%               e.g. 'm(0)+d(3)' 
+%
+%               - outputSize: the number of variables to use for rows and
+%               columns
+%               e.g. [1, 2] will construct a table two graycode rows long
+%               and four graycode columns wide
+%
+%               - optionals:
+%               -- fillerType: If string or table contains "missing rows",
+%               it will populate the rest of the table with don't cares by
+%               default unless it is provided with a different a character
+%               e.g. '0' will fill the rest of karnaugh map with zeros
+%               
 
 
 %% Validate Inputs
@@ -17,7 +37,7 @@ if (ischar(truthTableOrStr))
     if (isempty(regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)(\s*\+\s*(d)\((\d+)(,\s*\d+)*\))*$', 'once')))
         error(...
         'KMAP:InvalidStr',...
-        'Function string must begin with "m" (for minterm) or "M" (for maxterm) followed by numbers (comma seperated) enclosed in paranthesis.' ...
+        'Function string must begin with "m" (for minterm) or "M" (for maxterm) followed by numbers (comma seperated) enclosed in parentheses.' ...
         );
     else
         % Extract minterms/maxterms and dont-cares if provided
@@ -48,14 +68,14 @@ if (ischar(truthTableOrStr))
         end
         
         % Combine with dontcares (if they exist)
-        truthTable = [num2cell(dec2bin(truthTable)) outputCol];
+        truthTable = [num2cell(dec2bin(truthTable, numVars)) outputCol];
         if (~isempty(dontCares))
             dontCareOutput = repmat({'X'}, length(dontCares), 1);
-            truthTable = [truthTable; num2cell(dec2bin(dontCares)) dontCareOutput];
+            truthTable = [truthTable; num2cell(dec2bin(dontCares, numVars)) dontCareOutput];
         end
     end
 
-% TODO
+% TODO: Allow cell input
 %elseif (iscell(truthTableOrStr))
     
 else
