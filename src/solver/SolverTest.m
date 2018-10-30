@@ -278,7 +278,7 @@ classdef SolverTest < matlab.unittest.TestCase
                 '10',       '1',    '0',    '0',    '1';
             };
             verifyEqual(testCase, solver(K), '(~B*~D)');
-            verifyEqual(testCase, solver(K,'maxterm'), '(~B)*(~D)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(~D)*(~B)');
             
             
             K = {
@@ -323,8 +323,31 @@ classdef SolverTest < matlab.unittest.TestCase
                 '10',       '0',    '1',    '0',    '1';
             };
             
-            verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*B*~C*~D)+(A*B*C*D)+(A*~B*~C*D)+(A*~B*C*~D)');
-            verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)*(~A+B+C+D)*(~A+B+~C+~D)');
+            verifyEqual(testCase, solver(K), '(~A*~B*~C*~D)+(~A*~B*C*D)+(~A*B*~C*D)+(~A*B*C*~D)+(A*~B*~C*D)+(A*~B*C*~D)+(A*B*~C*~D)+(A*B*C*D)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(A+B+C+~D)*(A+B+~C+D)*(A+~B+C+D)*(A+~B+~C+~D)*(~A+B+C+D)*(~A+B+~C+~D)*(~A+~B+C+~D)*(~A+~B+~C+D)');
+        end
+        
+        %% Optimal
+        function testOptimal_1(testCase)
+            K = {
+                'WX\YZ',    '00',   '01',   '11',   '10';
+                '00',       '1',    '0',    '0',    '0';
+                '01',       '1',    '1',    '1',    '0';
+                '11',       '1',    '0',    '1',    '0';
+                '10',       '1',    '0',    '1',    '0';
+            };
+            verifyEqual(testCase, solver(K), '(~Y*~Z)+(W*Y*Z)+(~W*X*Z)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(~W+Y+~Z)*(~Y+Z)*(W+X+~Z)');
+            
+            K = {
+                'ab\cd',    '00',   '01',   '11',   '10';
+                '00',       '0',    '0',    '0',    'X';
+                '01',       '1',    '0',    '0',    '1';
+                '11',       'X',    '1',    'X',    '0';
+                '10',       '0',    '1',    '1',    '1';
+            };
+            verifyEqual(testCase, solver(K), '(a*d)+(~a*b*~d)+(~b*c*~d)');
+            verifyEqual(testCase, solver(K,'maxterm'), '(a+~d)*(b+c+d)*(~a+~b+~c)');
         end
     end
 end

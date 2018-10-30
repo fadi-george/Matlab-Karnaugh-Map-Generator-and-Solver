@@ -14,41 +14,63 @@ optargs = {'X'};
 
 if (ischar(truthTableOrStr))
     % Non-valid string
-    if (~regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)$'))
+    if (isempty(regexp(truthTableOrStr, '^(m|M)\((\d+)(,\s*\d+)*\)(\s*\+\s*(d)\((\d+)(,\s*\d+)*\))*$', 'once')))
         error(...
         'KMAP:InvalidStr',...
         'Function string must begin with "m" (for minterm) or "M" (for maxterm) followed by numbers (comma seperated) enclosed in paranthesis.' ...
         );
     else
-        [truthTable, I, J] = unique(str2num(truthTableOrStr(3:end-1)));
+        % Extract minterms/maxterms and dont-cares if provided
+        matchCell = regexp(truthTableOrStr, '(\d+)(,\s*\d+)*', 'match');
+        dontCares = [];
         
-        isMinTerm = 1;
-        outputCol = ones(length(truthTable),1);
+        [truthTable, I, J] = unique(str2num(matchCell{1}));
+        if (length(matchCell) == 2)
+            [dontCares, DI, DJ] = unique(str2num(matchCell{2}));
+        end
+        
+        outputCol = repmat({'1'}, length(truthTable), 1);
         optargs{1} = '0';
         if (truthTableOrStr(1) == 'M')
-            isMinTerm = 0;
-            outputCol = outputCol - 1;
+        outputCol = repmat({'0'}, length(truthTable), 1);
             optargs{1} = '1';
         end
         
         % transforming numbers from string to binary representation
         if (length(I) ~= length(J))
-            warning('String contains duplicate entries');
+            warning('Minterm/Maxterm string contains duplicate values.');
         end
-        truthTable = str2double(num2cell(dec2bin(truthTable)));
+        if (length(matchCell) == 2 && length(DI) ~= length(DJ))
+            warning('Don''''t cares string contains duplicate values.');
+        end
+        if (intersect(truthTable, dontCares))
+            error('KMAP:Duplicates', 'Minterm/maxterms contain one or more matching values with don''''t cares');
+        end
         
-        % padding with output column
-        truthTable = [truthTable outputCol];
+        % Combine with dontcares (if they exist)
+        truthTable = [num2cell(dec2bin(truthTable)) outputCol];
+        if (~isempty(dontCares))
+            dontCareOutput = repmat({'X'}, length(dontCares), 1);
+            truthTable = [truthTable; num2cell(dec2bin(dontCares)) dontCareOutput];
+        end
     end
+
+% TODO
+%elseif (iscell(truthTableOrStr))
+    
+else
+    if (all(truthTable(:) <= 1 & truthTable(:) >= 0) == 0)
+        error('KMAP:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
+    end
+    % Convesrion to cell of strings
+   truthTable = arrayfun(@num2str, truthTable, 'UniformOutput', false);
 end
 
+% Additional Validation
 % Invaid truth table
 [tr tc] = size(truthTable);
 isEmpty = sum(tr + tc) == 0;
 
-if (all(truthTable(:) <= 1 & truthTable(:) >= 0) == 0)
-    error('KMAP:BinaryInput', 'Binary values only. Discard rows with don''t cares.')
-end
 if (tr > 2^(tc - 1))
     error('KMAP:InvalidRowCount', 'Truth table contains too many rows when excluding chosen column.')
 end
@@ -88,7 +110,6 @@ kMat(1,1,1) = {str};
 % Gray codes
 kMat(2:rows+1,1) = cellstr(dec2bin(graycode(0:rows-1),rowVars));
 kMat(1,2:cols+1) = cellstr(dec2bin(graycode(0:cols-1),colVars));
-
 if (isEmpty)
     return;
 end
@@ -98,7 +119,8 @@ end
 outputEntries = truthTable(:,end);
 trimmedTable = truthTable;
 trimmedTable(:,end) = [];
-[trimmedTable, R, L] = unique(trimmedTable, 'rows', 'stable');
+[~, R, L] = unique(cell2mat(trimmedTable), 'rows', 'stable');
+trimmedTable = trimmedTable(R,:);
 outputEntries = outputEntries(R);
 
 dupRowInds = L(hist(L,unique(L))>1);
@@ -107,14 +129,16 @@ if (~isempty(dupRowInds))
     trimmedTable(dupRowInds,:) = [];
     outputEntries(dupRowInds) = [];
 end
-outputEntries=cellstr(num2str(outputEntries));
 
 %% Map Rows to Map
 %%
 % Mapping output column to a cell array
 % rows excluding the last column will be mapped to binary values
-rowInds = binArr2Dec(trimmedTable(:,1:rowVars));
-colInds = binArr2Dec(trimmedTable(:,rowVars+1:end));
+tempRows = cell2mat(trimmedTable(:,1:rowVars)) - '0';
+rowInds = binArr2Dec(tempRows);
+
+tempCols = cell2mat(trimmedTable(:,rowVars+1:end)) - '0';
+colInds = binArr2Dec(tempCols);
 
 % Performing graycode inverse and offsetting for placement
 rowInds = graycodeInv(rowInds) + 2;
