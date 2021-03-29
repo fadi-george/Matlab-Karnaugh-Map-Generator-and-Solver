@@ -17,7 +17,7 @@ The karnaughMap script will output a Karnaugh Map based on some specified parame
     
 - **outputSize** (Number of variables to place for the rows and columns)  
 
-    e.g. [1 2] will generate 3 x 8 Karnaugh Map with the first row and column contain graycode labels
+    e.g. [1 2] will generate 2 x 4 Karnaugh Map with the first row and column contain graycode labels
     with the rows alternating from 0 to 1, and the columns alternating from '00' to '10'.)
     ```
     {
